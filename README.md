@@ -1,0 +1,1 @@
+Maven plugin for Neovim

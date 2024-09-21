@@ -1,0 +1,230 @@
+---@class Project
+---@field private _compact_name  string
+---@field pom_xml_path string
+---@field root_path string
+---@field name string
+---@field group_id string
+---@field artifact_id string
+---@field version string
+---@field lifecycles Project.Lifecycle[]
+---@field dependencies Project.Dependency[]
+---@field plugins Project.Plugin[]
+---@field commands Project.Command[]
+local Project = {}
+
+---Create a new instance of a Project
+---@param root_path string
+---@param pom_xml_path string
+---@param group_id string
+---@param artifact_id string
+---@param version string
+---@param name? string
+---@param dependencies? Project.Dependency[]
+---@param plugins? Project.Plugin[]
+---@param commands? Project.Command[]
+---@return Project
+function Project:new(
+  root_path,
+  pom_xml_path,
+  group_id,
+  artifact_id,
+  version,
+  name,
+  dependencies,
+  plugins,
+  commands
+)
+  self.__index = self
+  self.lifecycles = self.default_lifecycles()
+  self._compact_name = group_id .. ':' .. artifact_id .. ':' .. version
+  return setmetatable({
+    root_path = root_path,
+    pom_xml_path = pom_xml_path,
+    group_id = group_id,
+    artifact_id = artifact_id,
+    version = version,
+    name = name,
+    dependencies = dependencies or {},
+    plugins = plugins or {},
+    commands = commands or {},
+  }, self)
+end
+
+---Get default lifecycles
+---@return Project.Lifecycle[]
+function Project.default_lifecycles()
+  return {
+    Project.Lifecycle('clean', 'remove files of the previous build', 'clean'),
+    Project.Lifecycle('validate', 'validate the project is correct', 'validate'),
+    Project.Lifecycle('compile', 'compile the source code of the project', 'compile'),
+    Project.Lifecycle('test', 'run the project tests', 'test'),
+    Project.Lifecycle('package', 'package the compiled code', 'package'),
+    Project.Lifecycle('verify', 'verify the package is valid', 'verify'),
+    Project.Lifecycle('install', 'install the package into the local repository', 'install'),
+    Project.Lifecycle('site', "generate the project's site documentation", 'site'),
+    Project.Lifecycle('deploy', 'deploy to the remote repository', 'deploy'),
+  }
+end
+
+---Set dependencies
+---@param dependencies Project.Dependency[]
+function Project:set_dependencies(dependencies)
+  self.dependencies = dependencies
+end
+
+---Set plugins
+---@param plugins Project.Plugin[]
+function Project:set_plugins(plugins)
+  self.plugins = plugins
+end
+
+---Set commands
+---@param commands Project.Command[]
+function Project:set_commands(commands)
+  self.commands = commands
+end
+
+---@return string
+function Project:get_compact_name()
+  return self._compact_name
+end
+
+---@class Project.Command
+---@field name string
+---@field description string
+---@field cmd_args string[]
+local Command = {}
+
+Command.__index = Command
+
+---@param name string
+---@param description string
+---@param cmd_args string[]
+---@return table
+function Project.Command(name, description, cmd_args)
+  local self = {}
+  setmetatable(self, Command)
+  self.name = name
+  self.description = description
+  self.cmd_args = cmd_args
+  return self
+end
+
+---@class Project.Lifecycle
+---@field name string
+---@field description string
+---@field cmd_arg string
+local Lifecycle = {}
+
+Lifecycle.__index = Lifecycle
+
+---@param name string
+---@param description string
+---@param cmd_arg string
+---@return table
+function Project.Lifecycle(name, description, cmd_arg)
+  local self = {}
+  setmetatable(self, Lifecycle)
+  self.name = name
+  self.description = description
+  self.cmd_arg = cmd_arg
+  return self
+end
+
+---@class Project.Dependency
+---@field private _compact_name string
+---@field id string
+---@field parent_id string | nil
+---@field group_id string
+---@field artifact_id string
+---@field version string
+---@field scope string
+local Dependency = {}
+Dependency.__index = Dependency
+
+---@alias Dependency Project.Dependency
+
+---@return string
+function Dependency:get_compact_name()
+  return self._compact_name
+end
+
+---@param id string
+---@param parent_id string | nil
+---@param group_id string
+---@param artifact_id string
+---@param version string
+---@param scope? string
+---@return Project.Dependency
+function Project.Dependency(id, parent_id, group_id, artifact_id, version, scope)
+  local self = {}
+  setmetatable(self, Dependency)
+  self.id = id
+  self.parent_id = parent_id
+  self.group_id = group_id
+  self.artifact_id = artifact_id
+  self.version = version
+  self._compact_name = group_id .. ':' .. artifact_id .. ':' .. version
+  self.scope = scope or 'compile'
+  return self
+end
+
+---@class Project.Plugin
+---@field private _compact_name string
+---@field group_id string
+---@field artifact_id string
+---@field version string
+---@field goals? string[]
+local Plugin = {}
+
+Plugin.__index = Plugin
+
+---@alias Plugin Project.Plugin
+
+---@return string
+function Plugin:get_compact_name()
+  return self._compact_name
+end
+
+---Add a goal to the list of goals
+---@param goal string
+function Plugin:add_goal(goal)
+  table.insert(self.goals, goal)
+end
+
+---@param group_id string
+---@param artifact_id string
+---@param version string
+---@param goals? Plugin.Goal[]
+---@return Project.Plugin
+function Project.Plugin(group_id, artifact_id, version, goals)
+  local self = {}
+  setmetatable(self, Plugin)
+  self.group_id = group_id
+  self.artifact_id = artifact_id
+  self.version = version
+  self._compact_name = group_id .. ':' .. artifact_id .. ':' .. version
+  self.goals = goals or {}
+  return self
+end
+
+---@class Plugin.Goal
+---@field name string
+---@field cmd_args string[]
+local Goal = {}
+
+Goal.__index = Goal
+
+---@alias Goal Plugin.Goal
+
+---@param name string
+---@param cmd_arg string
+function Plugin.Goals(name, cmd_arg)
+  local self = {}
+  setmetatable(self, Goal)
+  self.name = name
+  self.cmd_args = cmd_arg
+  return self
+end
+
+return Project
