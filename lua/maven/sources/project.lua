@@ -185,7 +185,8 @@ end
 ---@field group_id string
 ---@field artifact_id string
 ---@field version string
----@field goals? string[]
+---@field goal_prefix string
+---@field goals? Project.Goal[]
 local Plugin = {}
 
 Plugin.__index = Plugin
@@ -198,42 +199,48 @@ function Plugin:get_compact_name()
 end
 
 ---Add a goal to the list of goals
----@param goal string
+---@param goal Project.Goal
 function Plugin:add_goal(goal)
   table.insert(self.goals, goal)
+end
+
+---Set goal prefix
+---@param goal_prefix string
+function Plugin:set_goal_prefix(goal_prefix)
+  self.goal_prefix = assert(goal_prefix, 'Goal prefix required')
 end
 
 ---@param group_id string
 ---@param artifact_id string
 ---@param version string
----@param goals? Plugin.Goal[]
+---@param goal_prefix? string
+---@param goals? Project.Goal[]
 ---@return Project.Plugin
-function Project.Plugin(group_id, artifact_id, version, goals)
+function Project.Plugin(group_id, artifact_id, version, goal_prefix, goals)
   local self = {}
   setmetatable(self, Plugin)
   self.group_id = group_id or ''
   self.artifact_id = artifact_id
   self.version = version or ''
+  self.goal_prefix = goal_prefix or ''
   self.goals = goals or {}
   return self
 end
 
----@class Plugin.Goal
+---@class Project.Goal
 ---@field name string
----@field cmd_args string[]
 local Goal = {}
 
 Goal.__index = Goal
 
----@alias Goal Plugin.Goal
+---@alias Goal Project.Goal
 
 ---@param name string
----@param cmd_arg string
-function Plugin.Goals(name, cmd_arg)
+---@return  Project.Goal
+function Project.Goal(name) --- it could grow
   local self = {}
   setmetatable(self, Goal)
   self.name = name
-  self.cmd_args = cmd_arg
   return self
 end
 
