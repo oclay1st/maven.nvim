@@ -3,10 +3,11 @@ local NuiLine = require('nui.line')
 local NuiSplit = require('nui.split')
 local NuiPopup = require('nui.popup')
 local Path = require('plenary.path')
-local DependenciesParser = require('maven.parsers.dependencies_parser')
+local DependencyTreeParser = require('maven.parsers.dependency_tree_parser')
 local EffectivePomParser = require('maven.parsers.epom_xml_parser')
 local PluginParser = require('maven.parsers.plugin_xml_parser')
-local Utils = require('maven.utils.init')
+local Utils = require('maven.utils')
+local CommandBuilder = require('maven.utils.cmd_builder')
 local Console = require('maven.ui.console')
 local MavenConfig = require('maven.config')
 local highlights = require('maven.highlights')
@@ -50,12 +51,14 @@ end
 local load_dependencies_nodes = function(node, tree, project)
   local output_dir = Utils.maven_data_path
   local output_filename = Utils.uuid() .. '.txt'
-  local args = Utils.build_dependencies_cmd_args(project.pom_xml_path, output_dir, output_filename)
+  local args =
+    CommandBuilder.build_mvn_dependencies_args(project.pom_xml_path, output_dir, output_filename)
   local on_success = function()
     vim.schedule(function()
       local file_path = Path:new(output_dir, output_filename)
-      local parser = DependenciesParser.new(file_path:absolute())
+      local parser = DependencyTreeParser.new(file_path:absolute())
       local dependencies = parser:parse()
+      project:set_dependencies(dependencies)
       file_path:rm()
       local dependency_nodes = {}
       for _, dependency in ipairs(dependencies) do
@@ -88,12 +91,12 @@ local load_plugins_nodes = function(node, tree, project)
   local output_filename = Utils.uuid() .. '.epom'
   local file_path = Path:new(output_dir, output_filename)
   local absolute_file_path = file_path:absolute()
-  local args = Utils.build_effective_pom_cmd_args(project.pom_xml_path, absolute_file_path)
   local on_success = function()
     vim.schedule(function()
       local parser = EffectivePomParser.new(absolute_file_path)
       parser:parse()
       local plugins = parser:get_plugins()
+      project:set_plugins(plugins)
       -- file_path:rm()
       local plugin_nodes = {}
       for _, plugin in ipairs(plugins) do
@@ -111,6 +114,7 @@ local load_plugins_nodes = function(node, tree, project)
       tree:render()
     end)
   end
+  local args = CommandBuilder.build_mvn_effective_pom_args(project.pom_xml_path, absolute_file_path)
   console:execute_mvn_command(args, false, on_success)
 end
 
@@ -250,10 +254,10 @@ local setup_win_maps = function(win, tree, projects)
     local updated = false
     local project = lookup_project(node.project_path, projects)
     if node.type == 'command' then
-      local args = Utils.build_cmd_args(project.pom_xml_path, node.cmd_args)
+      local args = CommandBuilder.build_mvn_args(project.pom_xml_path, node.cmd_args)
       console:execute_mvn_command(args, true)
     elseif node.type == 'lifecycle' then
-      local args = Utils.build_cmd_args(project.pom_xml_path, { node.cmd_arg })
+      local args = CommandBuilder.build_mvn_args(project.pom_xml_path, { node.cmd_arg })
       console:execute_mvn_command(args, true)
     elseif node.type == 'dependencies' and not node.is_loaded then
       load_dependencies_nodes(node, tree, project)
