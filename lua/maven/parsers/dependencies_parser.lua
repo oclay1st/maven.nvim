@@ -1,6 +1,6 @@
 local Project = require('maven.sources.project')
 local context_manager = require('plenary.context_manager')
-local Utils = require('maven.utils')
+local Utils = require('maven.utils.init')
 local with = context_manager.with
 local open = context_manager.open
 
