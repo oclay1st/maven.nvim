@@ -36,14 +36,13 @@ function Project:new(
 )
   self.__index = self
   self.lifecycles = self.default_lifecycles()
-  self._compact_name = group_id .. ':' .. artifact_id .. ':' .. version
   return setmetatable({
     root_path = root_path,
     pom_xml_path = pom_xml_path,
-    group_id = group_id,
+    group_id = group_id or '',
     artifact_id = artifact_id,
-    version = version,
-    name = name,
+    version = version or '',
+    name = name or '',
     dependencies = dependencies or {},
     plugins = plugins or {},
     commands = commands or {},
@@ -86,7 +85,7 @@ end
 
 ---@return string
 function Project:get_compact_name()
-  return self._compact_name
+  return self.group_id .. ':' .. self.artifact_id .. ':' .. self.version
 end
 
 ---@class Project.Command
@@ -132,13 +131,14 @@ function Project.Lifecycle(name, description, cmd_arg)
 end
 
 ---@class Project.Dependency
----@field private _compact_name string
 ---@field id string
 ---@field parent_id string | nil
 ---@field group_id string
 ---@field artifact_id string
 ---@field version string
 ---@field scope string
+---@field is_duplicate boolean
+---@field conflict_version string
 local Dependency = {}
 Dependency.__index = Dependency
 
@@ -146,7 +146,7 @@ Dependency.__index = Dependency
 
 ---@return string
 function Dependency:get_compact_name()
-  return self._compact_name
+  return self.group_id .. ':' .. self.artifact_id .. ':' .. self.version
 end
 
 ---@param id string
@@ -155,22 +155,33 @@ end
 ---@param artifact_id string
 ---@param version string
 ---@param scope? string
+---@param is_duplicate? boolean
+---@param conflict_version? string
 ---@return Project.Dependency
-function Project.Dependency(id, parent_id, group_id, artifact_id, version, scope)
+function Project.Dependency(
+  id,
+  parent_id,
+  group_id,
+  artifact_id,
+  version,
+  scope,
+  is_duplicate,
+  conflict_version
+)
   local self = {}
   setmetatable(self, Dependency)
   self.id = id
   self.parent_id = parent_id
-  self.group_id = group_id
+  self.group_id = group_id or ''
   self.artifact_id = artifact_id
-  self.version = version
-  self._compact_name = group_id .. ':' .. artifact_id .. ':' .. version
-  self.scope = scope or 'compile'
+  self.version = version or ''
+  self.scope = scope or ''
+  self.is_duplicate = is_duplicate or false
+  self.conflict_version = conflict_version
   return self
 end
 
 ---@class Project.Plugin
----@field private _compact_name string
 ---@field group_id string
 ---@field artifact_id string
 ---@field version string
@@ -183,7 +194,7 @@ Plugin.__index = Plugin
 
 ---@return string
 function Plugin:get_compact_name()
-  return self._compact_name
+  return self.group_id .. ':' .. self.artifact_id .. ':' .. self.version
 end
 
 ---Add a goal to the list of goals
@@ -200,10 +211,9 @@ end
 function Project.Plugin(group_id, artifact_id, version, goals)
   local self = {}
   setmetatable(self, Plugin)
-  self.group_id = group_id
+  self.group_id = group_id or ''
   self.artifact_id = artifact_id
-  self.version = version
-  self._compact_name = group_id .. ':' .. artifact_id .. ':' .. version
+  self.version = version or ''
   self.goals = goals or {}
   return self
 end
