@@ -4,17 +4,17 @@ local Utils = require('maven.utils.init')
 local with = context_manager.with
 local open = context_manager.open
 
----@class DependenciesParser
+---@class DependencyTreeParser
 ---@field tree_file_path string
-local DependenciesParser = {}
+local DependencyTreeParser = {}
 
-DependenciesParser.__index = DependenciesParser
+DependencyTreeParser.__index = DependencyTreeParser
 
 ---@param tree_file_path string
----@return DependenciesParser
-function DependenciesParser.new(tree_file_path)
+---@return DependencyTreeParser
+function DependencyTreeParser.new(tree_file_path)
   local self = {}
-  setmetatable(self, DependenciesParser)
+  setmetatable(self, DependencyTreeParser)
   self.tree_file_path = tree_file_path
   return self
 end
@@ -51,7 +51,7 @@ end
 
 ---Resolve dependencies
 ---@return Project.Dependency[]
-function DependenciesParser:parse()
+function DependencyTreeParser:parse()
   local dependencies = {}
   with(open(self.tree_file_path), function(reader)
     reader:read() --- skip the name of the project
@@ -73,4 +73,4 @@ function DependenciesParser:parse()
   return dependencies
 end
 
-return DependenciesParser
+return DependencyTreeParser
