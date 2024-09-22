@@ -25,11 +25,28 @@ end
 ---@param parent_id string | nil
 ---@return Project.Dependency
 local parse_dependency = function(text, id, parent_id)
-  local pattern = '(.-):(.-):(.-):(%w+)%s?(.*)'
+  local pattern = '(.-):(.-):(.-):(%w+[/?%w+]*)%s?(.*)'
   local group_id, artifact_id, version, scope, comment = text:match(pattern)
-  print('scope: ' .. scope .. ' comment: ' .. (comment or ''))
-  return Project.Dependency(id, parent_id, group_id, artifact_id, version, scope)
-  -- end
+  comment = comment or ''
+  local is_duplicate = comment:find('duplicate') ~= nil
+  local conflict_version = nil
+  local real_version = comment:match('conflict: (.-)%)')
+  if real_version then
+    conflict_version = version
+    version = real_version
+  end
+  local _, count_scopes = string.gsub(scope, '(%w+)/?', '')
+  scope = count_scopes > 1 and '' or scope
+  return Project.Dependency(
+    id,
+    parent_id,
+    group_id,
+    artifact_id,
+    version,
+    scope,
+    is_duplicate,
+    conflict_version
+  )
 end
 
 ---Resolve dependencies
