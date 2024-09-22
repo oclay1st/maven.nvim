@@ -33,12 +33,13 @@ local node_types = {
 ---@param projects Project[]
 ---@return Project
 local lookup_project = function(path, projects)
-  for _, value in ipairs(projects) do
-    if value.root_path == path then
-      return value
+  local project ---@type Project
+  for _, item in ipairs(projects) do
+    if item.root_path == path then
+      project = item
     end
-    error('Project not found')
   end
+  return assert(project, 'Project not found')
 end
 
 ---Load the dependency nodes for the tree
@@ -239,11 +240,11 @@ local setup_win_maps = function(win, tree, projects)
   end)
 
   win:map('n', '<enter>', function()
-    local updated = false
     local node = tree:get_node()
     if node == nil then
       return
     end
+    local updated = false
     local project = lookup_project(node.project_path, projects)
     if node.type == 'command' then
       local args = Utils.build_cmd_args(project.pom_xml_path, node.cmd_args)
@@ -303,9 +304,13 @@ M.mount = function(projects)
   local header_line = create_header()
   header_line:render(win.bufnr, MavenConfig.namespace, 1)
 
-  ---Create the Projects lines
+  ---Create the Projects line
   local project_line = NuiLine()
-  project_line:append(' Projects:', highlights.MAVEN_DIM_TEXT)
+  local project_text = ' Projects:'
+  if vim.tbl_isempty(projects) then
+    project_text = project_text .. ' (create a new project) '
+  end
+  project_line:append(project_text, highlights.MAVEN_DIM_TEXT)
   project_line:render(win.bufnr, MavenConfig.namespace, 2)
 
   ---Create the tree
