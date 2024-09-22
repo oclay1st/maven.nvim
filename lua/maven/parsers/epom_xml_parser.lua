@@ -59,7 +59,7 @@ function EffectivePomParser:get_plugins()
   local plugins = {} ---@type table
   local data = self._xml.project.build.plugins.plugin
   if vim.islist(data) then
-    for _, item in ipairs(self._xml.project.build.plugins.plugin) do
+    for _, item in ipairs(data) do
       local group_id = item.groupId or 'org.apache.maven.plugins'
       local artifact_id = item.artifactId
       local version = item.version
