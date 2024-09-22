@@ -4,7 +4,7 @@ local NuiSplit = require('nui.split')
 local NuiPopup = require('nui.popup')
 local Path = require('plenary.path')
 local DependenciesParser = require('maven.parsers.dependencies_parser')
-local PluginsParser = require('maven.parsers.plugins_parser')
+local EffectivePomParser = require('maven.parsers.epom_xml_parser')
 local Utils = require('maven.utils')
 local Console = require('maven.ui.console')
 local MavenConfig = require('maven.config')
@@ -90,15 +90,17 @@ local load_plugins_nodes = function(node, tree, project)
   local args = Utils.build_effective_pom_cmd_args(project.pom_xml_path, absolute_file_path)
   local on_success = function()
     vim.schedule(function()
-      local parser = PluginsParser.new(absolute_file_path)
-      local plugins = parser:parse()
-      file_path:rm()
+      local parser = EffectivePomParser.new(absolute_file_path)
+      parser:parse()
+      local plugins = parser:get_plugins()
+      -- file_path:rm()
       local plugin_nodes = {}
       for _, plugin in ipairs(plugins) do
         local plugin_node = NuiTree.Node({
           text = plugin:get_compact_name(),
           type = 'plugin',
           project_path = project.root_path,
+          is_loaded = false,
         })
         table.insert(plugin_nodes, plugin_node)
       end
@@ -108,7 +110,7 @@ local load_plugins_nodes = function(node, tree, project)
       tree:render()
     end)
   end
-  console:execute_mvn_command(args, true, on_success)
+  console:execute_mvn_command(args, false, on_success)
 end
 
 ---Create a project node
