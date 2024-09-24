@@ -3,12 +3,13 @@ local NuiLine = require('nui.line')
 local NuiSplit = require('nui.split')
 local NuiPopup = require('nui.popup')
 local Path = require('plenary.path')
+local Project = require('maven.sources.project')
 local DependencyTreeParser = require('maven.parsers.dependency_tree_parser')
 local EffectivePomParser = require('maven.parsers.epom_xml_parser')
 local PluginXmlParser = require('maven.parsers.plugin_xml_parser')
 local Utils = require('maven.utils')
 local CommandBuilder = require('maven.utils.cmd_builder')
-local Console = require('maven.ui.console')
+local Console = require('maven.utils.console')
 local MavenConfig = require('maven.config')
 local highlights = require('maven.highlights')
 local icons = require('maven.ui.icons')
@@ -54,8 +55,7 @@ local load_dependencies_nodes = function(node, tree, project)
   local on_success = function()
     vim.schedule(function()
       local file_path = Path:new(output_dir, output_filename)
-      local parser = DependencyTreeParser.new(file_path:absolute())
-      local dependencies = parser:parse()
+      local dependencies = DependencyTreeParser.parse_file(file_path:absolute())
       project:set_dependencies(dependencies)
       file_path:rm()
       local dependency_nodes = {}
@@ -93,13 +93,13 @@ local load_plugins_nodes = function(node, tree, project)
   local absolute_file_path = file_path:absolute()
   local on_success = function()
     vim.schedule(function()
-      local parser = EffectivePomParser.new(absolute_file_path)
-      parser:parse()
-      local plugins = parser:get_plugins()
-      project:set_plugins(plugins)
+      local epom = EffectivePomParser.parse_file(absolute_file_path)
       -- file_path:rm()
+      for _, item in ipairs(epom.plugins) do
+        project:add_plugin(Project.Plugin(item.group_id, item.artifact_id, item.version))
+      end
       local plugin_nodes = {}
-      for _, plugin in ipairs(plugins) do
+      for _, plugin in ipairs(project.plugins) do
         local plugin_node = NuiTree.Node({
           text = plugin:get_compact_name(),
           type = 'plugin',

@@ -9,8 +9,6 @@ local Console = {}
 
 Console.__index = Console
 
-local set_buf_options = function(buf, options) end
-
 ---Create a new console
 ---@return Console
 function Console.new()
@@ -39,8 +37,8 @@ function Console:create_buffer()
   vim.api.nvim_set_current_win(self.win)
   vim.cmd('enew')
   self.buf = vim.api.nvim_get_current_buf()
-  if not pcall(vim.api.nvim_buf_set_name, self.buf, 'MavenConsole') then
-    vim.api.nvim_buf_set_name(self.buf, 'MavenConsole')
+  if not pcall(vim.api.nvim_buf_set_name, self.buf, 'maven://MavenConsole') then
+    vim.api.nvim_buf_set_name(self.buf, 'maven://MavenConsole')
   end
   vim.api.nvim_set_option_value('buftype', 'nofile', { buf = self.buf })
   vim.api.nvim_set_option_value('swapfile', false, { buf = self.buf })
