@@ -5,19 +5,9 @@ local with = context_manager.with
 local open = context_manager.open
 
 ---@class DependencyTreeParser
----@field tree_file_path string
 local DependencyTreeParser = {}
 
 DependencyTreeParser.__index = DependencyTreeParser
-
----@param tree_file_path string
----@return DependencyTreeParser
-function DependencyTreeParser.new(tree_file_path)
-  local self = {}
-  setmetatable(self, DependencyTreeParser)
-  self.tree_file_path = tree_file_path
-  return self
-end
 
 ---Parse the dependency text
 ---@param text string
@@ -51,9 +41,9 @@ end
 
 ---Resolve dependencies
 ---@return Project.Dependency[]
-function DependencyTreeParser:parse()
+function DependencyTreeParser.parse_file(tree_file_path)
   local dependencies = {}
-  with(open(self.tree_file_path), function(reader)
+  with(open(tree_file_path), function(reader)
     reader:read() --- skip the name of the project
     local space_indentation = 3 --- all the  node are indent on multiple of 3 spaces
     local deep_dependency = {}
