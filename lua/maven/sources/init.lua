@@ -17,16 +17,15 @@ local create_custom_commands = function()
 end
 
 local create_project_from_pom = function(pom_xml_path)
-  local parser = PomParser.new(pom_xml_path)
-  parser:parse()
+  local pom = PomParser.parse_file(pom_xml_path)
   local project_path = pom_xml_path:gsub(pom_xml_file_pattern, '')
   return Project:new(
     project_path,
     pom_xml_path,
-    parser:get_group_id(),
-    parser:get_artifact_id(),
-    parser:get_version(),
-    parser:get_name()
+    pom.group_id,
+    pom.artifact_id,
+    pom.version,
+    pom.name
   )
 end
 
