@@ -50,17 +50,18 @@ function Console:create_buffer()
 end
 
 ---Execute maven command
+---@param command string
 ---@param args string[]
 ---@param show_output boolean
 ---@param on_success? function
 ---@param on_failure? function
-function Console:execute_mvn_command(args, show_output, on_success, on_failure)
+function Console:execute_command(command, args, show_output, on_success, on_failure)
   if show_output == true then
     self.buf = self.buf or self:create_buffer()
     vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {})
   end
   local job = Job:new({
-    command = MavenConfig.options.executable,
+    command = command,
     args = args,
     on_stdout = function(_, data)
       if show_output and self.buf then
@@ -73,7 +74,6 @@ function Console:execute_mvn_command(args, show_output, on_success, on_failure)
       end
     end,
   })
-
   if on_success then
     job:after_success(on_success)
   end

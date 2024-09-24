@@ -1,4 +1,3 @@
-local Project = require('maven.sources.project')
 ---@class MavenConfig
 local M = {}
 
@@ -22,7 +21,7 @@ local defaultOptions = {
     position = 'right',
     size = 68,
   },
-  executable = 'mvn',
+  mvn_executable = 'mvn',
   custom_commands = {},
 }
 
