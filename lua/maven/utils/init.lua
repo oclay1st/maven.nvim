@@ -12,4 +12,8 @@ end
 
 M.maven_data_path = Path:new(vim.fn.stdpath('cache'), 'maven'):absolute()
 
+M.maven_local_repository_path = Path:new(vim.loop.os_homedir(), '.m2', 'repository'):absolute()
+
+M.maven_plugin_xml_path = 'META-INF/maven/plugin.xml'
+
 return M
