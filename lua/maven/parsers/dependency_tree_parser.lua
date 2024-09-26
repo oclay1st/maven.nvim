@@ -26,7 +26,7 @@ local parse_dependency = function(text, id, parent_id)
     version = real_version
   end
   local _, count_scopes = string.gsub(scope, '(%w+)/?', '')
-  scope = count_scopes > 1 and '' or scope
+  scope = count_scopes == 1 and scope or nil
   return Project.Dependency(
     id,
     parent_id,
