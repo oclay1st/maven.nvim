@@ -71,10 +71,10 @@ function Project:set_dependencies(dependencies)
   self.dependencies = dependencies
 end
 
----Set plugins
----@param plugins Project.Plugin[]
-function Project:set_plugins(plugins)
-  self.plugins = plugins
+---Add a new plugin
+---@param plugin Project.Plugin
+function Project:add_plugin(plugin)
+  table.insert(self.plugins, plugin)
 end
 
 ---Set commands
@@ -175,7 +175,7 @@ function Project.Dependency(
   self.group_id = group_id or ''
   self.artifact_id = artifact_id
   self.version = version or ''
-  self.scope = scope or ''
+  self.scope = scope
   self.is_duplicate = is_duplicate or false
   self.conflict_version = conflict_version
   return self
@@ -196,6 +196,13 @@ Plugin.__index = Plugin
 ---@return string
 function Plugin:get_compact_name()
   return self.group_id .. ':' .. self.artifact_id .. ':' .. self.version
+end
+---Get mini name
+--- TODO: review later
+---@return string
+function Plugin:get_mini_name()
+  local name, _ = string.gsub(self.artifact_id, '(%-?maven%-?)*(%-?plugin%-?)', '')
+  return name
 end
 
 ---Add a goal to the list of goals
