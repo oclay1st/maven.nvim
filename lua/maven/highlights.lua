@@ -6,6 +6,7 @@ M.MAVEN_NORMAL_TEXT = 'MavenNormalText'
 M.MAVEN_SPECIAL_TEXT = 'MavenSpecialText'
 M.MAVEN_DIM_TEXT = 'MavenDimText'
 M.MAVEN_SPECIAL_TITLE = 'MavenSpecialTitle'
+M.MAVEN_ERROR_TEXT = 'MavenErrorText'
 
 local highlights = {
   {
@@ -23,6 +24,10 @@ local highlights = {
   {
     name = M.MAVEN_SPECIAL_TITLE,
     config = { default = true, link = 'Title' },
+  },
+  {
+    name = M.MAVEN_ERROR_TEXT,
+    config = { default = true, italic = true, fg = '#c53b53' },
   },
 }
 

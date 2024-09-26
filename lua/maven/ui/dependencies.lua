@@ -1,0 +1,238 @@
+local NuiTree = require('nui.tree')
+local NuiLine = require('nui.line')
+local Popup = require('nui.popup')
+local Layout = require('nui.layout')
+local event = require('nui.utils.autocmd').event
+local highlights = require('maven.highlights')
+local MavenConfig = require('maven.config')
+local icons = require('maven.ui.icons')
+
+local M = {}
+
+---Create dependency node
+---@param dependency Project.Dependency
+---@return NuiTree.Node
+local function create_tree_node(dependency)
+  return NuiTree.Node({
+    id = dependency.id,
+    text = dependency.artifact_id .. ':' .. dependency.version,
+    name = dependency.group_id .. ':' .. dependency.artifact_id,
+    scope = dependency.scope,
+    is_duplicate = dependency.is_duplicate,
+    has_conflict = dependency.conflict_version and true or false,
+    conflict_version = dependency.conflict_version,
+  })
+end
+
+---Create the node list of dependencies
+---@param dependencies Project.Dependency[]
+local function create_dependencies_list_nodes(dependencies)
+  local nodes_indexes = {}
+  for _, dependency in ipairs(dependencies) do
+    local name = dependency.group_id .. ':' .. dependency.artifact_id
+    if nodes_indexes[name] == nil then
+      local node = create_tree_node(dependency)
+      nodes_indexes[name] = node
+    end
+    if dependency.conflict_version then
+      nodes_indexes[name].has_conflict = true
+    end
+    if dependency.is_duplicate then
+      nodes_indexes[name].is_duplicate = true
+    end
+  end
+  local nodes = {}
+  for _, value in pairs(nodes_indexes) do
+    table.insert(nodes, value)
+  end
+  table.sort(nodes, function(a, b)
+    return string.lower(a.text) < string.lower(b.text)
+  end)
+  return nodes
+end
+
+local function create_dependencies_tree(bufnr)
+  return NuiTree({
+    ns_id = MavenConfig.namespace,
+    bufnr = bufnr,
+    prepare_node = function(node)
+      local line = NuiLine()
+      line:append(' ')
+      local icon = node.has_conflict and icons.default.warning or icons.default.package
+      local icon_highlight = node.has_conflict and 'DiagnosticWarn' or 'SpecialChar'
+      line:append(icon .. ' ', icon_highlight)
+      line:append(node.text)
+      if node.scope then
+        line:append(' (' .. node.scope .. ')', highlights.MAVEN_DIM_TEXT)
+      end
+      return line
+    end,
+  })
+end
+
+local function create_dependency_usages_tree(bufnr)
+  return NuiTree({
+    ns_id = MavenConfig.namespace,
+    bufnr = bufnr,
+    prepare_node = function(node)
+      local line = NuiLine()
+      line:append(' ' .. string.rep('  ', node:get_depth() - 1))
+      if node:has_children() then
+        line:append(node:is_expanded() and ' ' or ' ', 'SpecialChar')
+      else
+        line:append('  ')
+      end
+      local icon = icons.default.package
+      local icon_highlight = 'SpecialChar'
+      if node.has_conflict and not node:has_children() then
+        icon_highlight = 'DiagnosticWarn'
+        icon = icons.default.warning
+      end
+      line:append(icon .. ' ', icon_highlight)
+      if node.is_duplicate and not node:has_children() then
+        line:append(node.text, highlights.MAVEN_DIM_TEXT)
+      else
+        line:append(node.text)
+      end
+      if node.scope then
+        line:append(' (' .. node.scope .. ')', highlights.MAVEN_DIM_TEXT)
+      end
+      if node.conflict_version and not node:has_children() then
+        line:append(' conflict with ' .. node.conflict_version, highlights.MAVEN_ERROR_TEXT)
+      end
+      return line
+    end,
+  })
+end
+
+---Filter the related dependencies by name
+---@param name string
+---@param indexed_dependencies table
+local function filter_dependencies(name, indexed_dependencies)
+  local filtered_dependencies = {}
+  local filtered = {}
+  for _, dependency in pairs(indexed_dependencies) do
+    if name == dependency.group_id .. ':' .. dependency.artifact_id then
+      local pos_to_insert = #filtered_dependencies + 1
+      local id = dependency.id
+      while id ~= nil and filtered[id] == nil do
+        filtered[id] = 1
+        table.insert(filtered_dependencies, pos_to_insert, indexed_dependencies[id])
+        id = indexed_dependencies[id].parent_id
+      end
+    end
+  end
+  return filtered_dependencies
+end
+
+---Mount component
+---@param dependencies Project.Dependency[]
+M.mount = function(dependencies)
+  local default_win_opts = {
+    ns_id = MavenConfig.namespace,
+    win_options = {
+      cursorline = true,
+      scrolloff = 1,
+      sidescrolloff = 1,
+      cursorcolumn = false,
+      colorcolumn = '',
+      spell = false,
+      list = false,
+      wrap = false,
+    },
+    border = {
+      style = 'rounded',
+    },
+  }
+  --- Setup the dependencies win
+  local dependencies_win_opts = vim.tbl_deep_extend('force', default_win_opts, {
+    enter = true,
+    border = { text = { top = 'Resolved Dependencies' } },
+  })
+  local dependencies_win = Popup(dependencies_win_opts)
+  local dependencies_tree = create_dependencies_tree(dependencies_win.bufnr)
+  local dependencies_nodes = create_dependencies_list_nodes(dependencies)
+  dependencies_tree:set_nodes(dependencies_nodes)
+  dependencies_tree:render()
+
+  --- Setup the dependency usages win
+  local dependency_usages_win_opts = vim.tbl_deep_extend('force', default_win_opts, {
+    border = { text = { top = 'Dependency Usage' } },
+  })
+  local dependency_usages_win = Popup(dependency_usages_win_opts)
+  local dependency_usages_tree = create_dependency_usages_tree(dependency_usages_win.bufnr)
+  local indexed_dependencies = {}
+  for _, item in ipairs(dependencies) do
+    indexed_dependencies[item.id] = item
+  end
+
+  dependencies_win:on(event.CursorMoved, function()
+    local current_node = dependencies_tree:get_node()
+    if current_node == nil then
+      return
+    end
+    local filtered_dependencies = filter_dependencies(current_node.name, indexed_dependencies)
+    dependency_usages_tree:set_nodes({})
+    for _, dependency in pairs(filtered_dependencies) do
+      local parent_id = dependency.parent_id and '-' .. dependency.parent_id or nil
+      local node = create_tree_node(dependency)
+      dependency_usages_tree:add_node(node, parent_id)
+      if parent_id then
+        dependency_usages_tree:get_node(parent_id):expand()
+      end
+    end
+    dependency_usages_tree:render()
+  end)
+
+  dependency_usages_win:map('n', '<enter>', function()
+    local node = dependency_usages_tree:get_node()
+    if node == nil then
+      return
+    end
+    local updated = false
+    if node:is_expanded() then
+      updated = node:collapse() or updated
+    else
+      updated = node:expand() or updated
+    end
+    if updated then
+      dependency_usages_tree:render()
+    end
+  end)
+
+  ---Setup the layout
+  local layout = Layout(
+    {
+      relative = 'editor',
+      position = '50%',
+      size = {
+        width = '60%',
+        height = '80%',
+      },
+    },
+    Layout.Box({
+      Layout.Box(dependencies_win, { size = '50%' }),
+      Layout.Box(dependency_usages_win, { size = '50%' }),
+    }, { dir = 'row' })
+  )
+
+  for _, win in pairs({ dependencies_win, dependency_usages_win }) do
+    win:on(event.BufLeave, function()
+      vim.schedule(function()
+        local current_buf = vim.api.nvim_get_current_buf()
+        for _, w in pairs({ dependencies_win, dependency_usages_win }) do
+          if w.bufnr == current_buf then
+            return
+          end
+        end
+        layout:unmount()
+      end)
+    end)
+    win:map('n', 'q', function()
+      layout:unmount()
+    end)
+  end
+  layout:mount()
+end
+
+return M

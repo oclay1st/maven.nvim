@@ -15,6 +15,7 @@ M.default = {
   help = '󰘥',
   package_dependents = '',
   package_dependencies = '',
+  warning = '',
 }
 
 return M
