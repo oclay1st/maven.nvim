@@ -290,7 +290,12 @@ local setup_win_maps = function(win, tree, projects)
   end)
 
   win:map('n', 'D', function()
-    require('maven.ui.dependencies').mount()
+    local node = tree:get_node()
+    if node == nil then
+      return
+    end
+    local project = lookup_project(node.project_path, projects)
+    require('maven.ui.dependencies').mount(project.dependencies)
   end)
 
   win:map('n', '<enter>', function()
