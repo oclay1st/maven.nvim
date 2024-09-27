@@ -2,11 +2,7 @@ local NuiTree = require('nui.tree')
 local NuiLine = require('nui.line')
 local NuiSplit = require('nui.split')
 local NuiPopup = require('nui.popup')
-local Path = require('plenary.path')
-local Project = require('maven.sources.project')
-local DependencyTreeParser = require('maven.parsers.dependency_tree_parser')
-local EffectivePomParser = require('maven.parsers.epom_xml_parser')
-local PluginXmlParser = require('maven.parsers.plugin_xml_parser')
+local Sources = require('maven.sources')
 local Utils = require('maven.utils')
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Console = require('maven.utils.console')
@@ -50,36 +46,26 @@ end
 ---@param tree NuiTree
 ---@param project Project
 local load_dependencies_nodes = function(node, tree, project)
-  local output_dir = Utils.maven_data_path
-  local output_filename = Utils.uuid() .. '.txt'
-  local on_success = function()
+  Sources.load_project_dependencies(project.pom_xml_path, function(dependencies)
+    project:set_dependencies(dependencies)
     vim.schedule(function()
-      local file_path = Path:new(output_dir, output_filename)
-      local dependencies = DependencyTreeParser.parse_file(file_path:absolute())
-      project:set_dependencies(dependencies)
-      file_path:rm()
-      local dependency_nodes = {}
       for _, dependency in ipairs(dependencies) do
-        if dependency.parent_id == nil then
-          local dependency_node = NuiTree.Node({
-            id = dependency.id,
-            text = dependency:get_compact_name(),
-            type = 'dependency',
-            scope = dependency.scope,
-            project_path = project.root_path,
-          })
-          table.insert(dependency_nodes, dependency_node)
-        end
+        local dependency_node = NuiTree.Node({
+          id = dependency.id,
+          text = dependency:get_compact_name(),
+          type = 'dependency',
+          scope = dependency.scope,
+          project_path = project.root_path,
+          is_duplicate = dependency.is_duplicate,
+        })
+        local _parent_id = dependency.parent_id and '-' .. dependency.parent_id or node:get_id()
+        tree:add_node(dependency_node, _parent_id)
       end
       node.is_loaded = true
-      tree:set_nodes(dependency_nodes, node._id)
       node:expand()
       tree:render()
     end)
-  end
-  local command =
-    CommandBuilder.build_mvn_dependencies_cmd(project.pom_xml_path, output_dir, output_filename)
-  console:execute_command(command.cmd, command.args, false, on_success)
+  end)
 end
 
 ---Load the plugin nodes for the tree
@@ -87,19 +73,11 @@ end
 ---@param tree NuiTree
 ---@param project Project
 local load_plugins_nodes = function(node, tree, project)
-  local output_dir = Utils.maven_data_path
-  local output_filename = Utils.uuid() .. '.epom'
-  local file_path = Path:new(output_dir, output_filename)
-  local absolute_file_path = file_path:absolute()
-  local on_success = function()
+  Sources.load_project_plugins(project.pom_xml_path, function(plugins)
+    project:set_plugins(plugins)
     vim.schedule(function()
-      local epom = EffectivePomParser.parse_file(absolute_file_path)
-      -- file_path:rm()
-      for _, item in ipairs(epom.plugins) do
-        project:add_plugin(Project.Plugin(item.group_id, item.artifact_id, item.version))
-      end
       local plugin_nodes = {}
-      for _, plugin in ipairs(project.plugins) do
+      for _, plugin in ipairs(plugins) do
         local plugin_node = NuiTree.Node({
           text = plugin:get_compact_name(),
           type = 'plugin',
@@ -116,10 +94,7 @@ local load_plugins_nodes = function(node, tree, project)
       node:expand()
       tree:render()
     end)
-  end
-  local command =
-    CommandBuilder.build_mvn_effective_pom_cmd(project.pom_xml_path, absolute_file_path)
-  console:execute_command(command.cmd, command.args, false, on_success)
+  end)
 end
 
 ---Load the goal nodes for the tree
@@ -127,36 +102,30 @@ end
 ---@param tree NuiTree
 ---@param project Project
 local load_plugin_goals_nodes = function(node, tree, project)
-  local on_success = function(job, _, _)
-    local xml_content = table.concat(job:result(), ' ')
-    vim.schedule(function()
-      local plugin = PluginXmlParser.parse(xml_content)
-      -- file_path:rm()
-      local goal_nodes = {}
-      for _, goal in ipairs(plugin.goals) do
-        local goal_node = NuiTree.Node({
-          text = plugin.goal_prefix .. ':' .. goal.name,
-          type = 'plugin_goal',
-          cmd_arg = plugin.goal_prefix .. ':' .. goal.name,
-          project_path = project.root_path,
-        })
-        table.insert(goal_nodes, goal_node)
-      end
-      node.is_loaded = true
-      tree:set_nodes(goal_nodes, node._id)
-      node:expand()
-      tree:render()
-    end)
-  end
-  local jar_file_path = Path:new(
-    Utils.maven_local_repository_path,
-    string.gsub(node.group_id, '%.', Path.path.sep),
+  Sources.load_project_plugin_details(
+    node.group_id,
     node.artifact_id,
     node.version,
-    node.artifact_id .. '-' .. node.version .. '.jar'
-  ):absolute()
-  local command = CommandBuilder.build_read_zip_file_cmd(jar_file_path, Utils.maven_plugin_xml_path)
-  console:execute_command(command.cmd, command.args, false, on_success)
+    function(plugin)
+      project:replace_plugin(plugin)
+      vim.schedule(function()
+        local goal_nodes = {}
+        for _, goal in ipairs(plugin.goals) do
+          local goal_node = NuiTree.Node({
+            text = plugin.goal_prefix .. ':' .. goal.name,
+            type = 'plugin_goal',
+            cmd_arg = plugin.goal_prefix .. ':' .. goal.name,
+            project_path = project.root_path,
+          })
+          table.insert(goal_nodes, goal_node)
+        end
+        node.is_loaded = true
+        tree:set_nodes(goal_nodes, node._id)
+        node:expand()
+        tree:render()
+      end)
+    end
+  )
 end
 
 ---Create a project node
@@ -226,35 +195,10 @@ local create_project_node = function(project)
 
   return NuiTree.Node({
     id = Utils.uuid(),
-    text = project.name or project.artifact_id,
+    text = project.name,
     type = 'project',
     project_path = project.root_path,
   }, project_nodes)
-end
-
----Prepare node visualization
----@param node any
----@return NuiLine
-local prepare_node = function(node)
-  local icon = node_types[node.type] and node_types[node.type].icon or ' '
-  local line = NuiLine()
-  line:append(' ' .. string.rep('  ', node:get_depth() - 1))
-
-  if node:has_children() or node.is_loaded == false then
-    line:append(node:is_expanded() and ' ' or ' ', 'SpecialChar')
-  else
-    line:append('  ')
-  end
-  line:append(icon .. ' ', 'SpecialChar')
-  line:append(node.text)
-  if (node.type == 'command' or node.type == 'lifecycle') and node.description then
-    line:append(' (' .. node.description .. ')', highlights.MAVEN_DIM_TEXT)
-  end
-  if node.type == 'dependency' then
-    line:append(' (' .. node.scope .. ')', highlights.MAVEN_DIM_TEXT)
-  end
-
-  return line
 end
 
 ---Create  the tree component
@@ -264,20 +208,47 @@ local create_tree = function(bufnr)
     ns_id = MavenConfig.namespace,
     bufnr = bufnr,
     prepare_node = function(node)
-      return prepare_node(node)
+      local icon = node_types[node.type] and node_types[node.type].icon or ' '
+      local line = NuiLine()
+      line:append(' ' .. string.rep('  ', node:get_depth() - 1))
+
+      if node:has_children() or node.is_loaded == false then
+        line:append(node:is_expanded() and ' ' or ' ', 'SpecialChar')
+      else
+        line:append('  ')
+      end
+      line:append(icon .. ' ', 'SpecialChar')
+      if node.is_duplicate and not node:has_children() then
+        line:append(node.text, highlights.MAVEN_DIM_TEXT)
+      else
+        line:append(node.text)
+      end
+      if (node.type == 'command' or node.type == 'lifecycle') and node.description then
+        line:append(' (' .. node.description .. ')', highlights.MAVEN_DIM_TEXT)
+      end
+      if node.type == 'dependency' and node.scope then
+        line:append(' (' .. node.scope .. ')', highlights.MAVEN_DIM_TEXT)
+      end
+      return line
     end,
   })
 end
 
+---Create the header line
+---@return NuiLine
 local create_header = function()
   local line = NuiLine()
   local separator = '  '
-  line:append(' ' .. icons.default.maven .. ' Maven' .. separator, highlights.MAVEN_SPECIAL_TEXT)
-  line:append(icons.default.new_folder .. ' Create Project', highlights.MAVEN_SPECIAL_TEXT)
-  line:append('<a>' .. separator, highlights.MAVEN_NORMAL_TEXT)
-  line:append(icons.default.tree .. ' Analyze Dependencies', highlights.MAVEN_SPECIAL_TEXT)
+  line:append(' ' .. icons.default.maven .. ' Maven ' .. separator, highlights.MAVEN_SPECIAL_TEXT)
+  line:append(
+    icons.default.entry .. '' .. icons.default.tree .. ' Analyze Dependencies',
+    highlights.MAVEN_SPECIAL_TEXT
+  )
   line:append('<D>' .. separator, highlights.MAVEN_NORMAL_TEXT)
-  line:append(icons.default.help .. ' Help', highlights.MAVEN_SPECIAL_TEXT)
+  line:append(
+    icons.default.entry .. '' .. icons.default.help .. ' Help',
+    highlights.MAVEN_SPECIAL_TEXT
+  )
   line:append('<H>' .. separator, highlights.MAVEN_NORMAL_TEXT)
   return line
 end
@@ -295,7 +266,7 @@ local setup_win_maps = function(win, tree, projects)
       return
     end
     local project = lookup_project(node.project_path, projects)
-    require('maven.ui.dependencies').mount(project.dependencies)
+    require('maven.ui.dependencies').mount(project.name, project.dependencies)
   end)
 
   win:map('n', '<enter>', function()
@@ -307,10 +278,12 @@ local setup_win_maps = function(win, tree, projects)
     local project = lookup_project(node.project_path, projects)
     if node.type == 'command' then
       local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, node.cmd_args)
-      console:execute_command(command.cmd, command.args, true)
+      local show_output = MavenConfig.options.console.show_command_execution
+      console:execute_command(command.cmd, command.args, show_output)
     elseif node.type == 'lifecycle' then
       local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
-      console:execute_command(command.cmd, command.args, true)
+      local show_output = MavenConfig.options.console.show_lifecycle_execution
+      console:execute_command(command.cmd, command.args, show_output)
     elseif node.type == 'dependencies' and not node.is_loaded then
       load_dependencies_nodes(node, tree, project)
     elseif node.type == 'plugins' and not node.is_loaded then
@@ -319,7 +292,8 @@ local setup_win_maps = function(win, tree, projects)
       load_plugin_goals_nodes(node, tree, project)
     elseif node.type == 'plugin_goal' then
       local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
-      console:execute_command(command.cmd, command.args, true)
+      local show_output = MavenConfig.options.console.show_plugin_goal_execution
+      console:execute_command(command.cmd, command.args, show_output)
     end
 
     if node:is_expanded() then
@@ -338,9 +312,9 @@ end
 M.mount = function(projects)
   local default_win_options = {
     ns_id = MavenConfig.namespace,
-    relative = 'win',
-    position = MavenConfig.options.explorer_window.position,
-    size = MavenConfig.options.explorer_window.size,
+    relative = 'editor',
+    position = MavenConfig.options.explorer.position,
+    size = MavenConfig.options.explorer.size,
     buf_options = {
       buftype = 'nofile',
       swapfile = false,
@@ -358,7 +332,7 @@ M.mount = function(projects)
   }
 
   local win = nil
-  if MavenConfig.options.explorer_window.position == 'float' then
+  if MavenConfig.options.explorer.position == 'float' then
     win = NuiPopup(default_win_options)
   else
     win = NuiSplit(default_win_options)
@@ -371,7 +345,7 @@ M.mount = function(projects)
   ---Create the Projects line
   local project_line = NuiLine()
   local project_text = ' Projects:'
-  if vim.tbl_isempty(projects) then
+  if #projects == 0 then
     project_text = project_text .. ' (create a new project) '
   end
   project_line:append(project_text, highlights.MAVEN_DIM_TEXT)
