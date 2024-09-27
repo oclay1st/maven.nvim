@@ -42,7 +42,7 @@ function Project:new(
     group_id = group_id or '',
     artifact_id = artifact_id,
     version = version or '',
-    name = name or '',
+    name = name or artifact_id,
     dependencies = dependencies or {},
     plugins = plugins or {},
     commands = commands or {},
@@ -72,9 +72,28 @@ function Project:set_dependencies(dependencies)
 end
 
 ---Add a new plugin
+---@param plugins Project.Plugin[]
+function Project:set_plugins(plugins)
+  self.plugins = plugins
+end
+
+---Replace plugin
 ---@param plugin Project.Plugin
-function Project:add_plugin(plugin)
-  table.insert(self.plugins, plugin)
+function Project:replace_plugin(plugin)
+  local position
+  for index, value in ipairs(self.plugins) do
+    if
+      value.group_id == plugin.group_id
+      and value.artifact_id == plugin.artifact_id
+      and value.version == plugin.version
+    then
+      position = index
+      break
+    end
+  end
+  assert(position, 'Plugin not found: ' .. plugin:get_compact_name())
+  table.remove(self.plugins, position)
+  table.insert(self.plugins, position, plugin)
 end
 
 ---Set commands
