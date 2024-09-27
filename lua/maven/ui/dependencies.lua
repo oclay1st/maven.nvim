@@ -1,6 +1,8 @@
 local NuiTree = require('nui.tree')
 local NuiLine = require('nui.line')
+local NuiText = require('nui.text')
 local Popup = require('nui.popup')
+local Input = require('nui.input')
 local Layout = require('nui.layout')
 local event = require('nui.utils.autocmd').event
 local highlights = require('maven.highlights')
@@ -41,10 +43,7 @@ local function create_dependencies_list_nodes(dependencies)
       nodes_indexes[name].is_duplicate = true
     end
   end
-  local nodes = {}
-  for _, value in pairs(nodes_indexes) do
-    table.insert(nodes, value)
-  end
+  local nodes = vim.tbl_values(nodes_indexes)
   table.sort(nodes, function(a, b)
     return string.lower(a.text) < string.lower(b.text)
   end)
@@ -125,9 +124,84 @@ local function filter_dependencies(name, indexed_dependencies)
   return filtered_dependencies
 end
 
+local function create_dependency_filter(wind_id, on_change)
+  local win_height = vim.api.nvim_win_get_height(wind_id)
+  local relative_row = win_height - 1
+  local win_width = vim.api.nvim_win_get_width(wind_id)
+  local input = Input({
+    relative = 'win',
+    position = {
+      row = relative_row,
+      col = 0,
+    },
+    size = {
+      width = win_width,
+    },
+    zindex = 60,
+    border = {
+      style = 'rounded',
+      text = {
+        top = 'Filter',
+        top_align = 'center',
+      },
+    },
+  }, {
+    prompt = NuiText(icons.default.search .. '  ', 'SpecialChar'),
+    on_change = on_change,
+  })
+
+  input:on(event.BufLeave, function()
+    input:unmount()
+  end)
+
+  input:map('n', { '<esc>', 'q' }, function()
+    input:unmount()
+  end)
+
+  return input
+end
+
+---Create the component layout
+---@param left_win NuiPopup
+---@param right_win NuiPopup
+local function create_layout(left_win, right_win)
+  local layout = Layout(
+    {
+      relative = 'editor',
+      position = '50%',
+      size = {
+        width = '60%',
+        height = '80%',
+      },
+    },
+    Layout.Box({
+      Layout.Box(left_win, { size = '50%' }),
+      Layout.Box(right_win, { size = '50%' }),
+    }, { dir = 'row' })
+  )
+
+  for _, win in pairs({ left_win, right_win }) do
+    win:on(event.BufLeave, function()
+      vim.schedule(function()
+        local current_buf = vim.api.nvim_get_current_buf()
+        for _, w in pairs({ left_win, right_win }) do
+          if w.bufnr == current_buf then
+            return
+          end
+        end
+        layout:unmount()
+      end)
+    end)
+    win:map('n', { '<esc>', 'q' }, function()
+      layout:unmount()
+    end)
+  end
+  return layout
+end
+
 ---Mount component
 ---@param dependencies Project.Dependency[]
-M.mount = function(dependencies)
+M.mount = function(project_name, dependencies)
   local default_win_opts = {
     ns_id = MavenConfig.namespace,
     win_options = {
@@ -147,7 +221,7 @@ M.mount = function(dependencies)
   --- Setup the dependencies win
   local dependencies_win_opts = vim.tbl_deep_extend('force', default_win_opts, {
     enter = true,
-    border = { text = { top = 'Resolved Dependencies' } },
+    border = { text = { top = ' Resolved Dependencies (' .. project_name .. ') ' } },
   })
   local dependencies_win = Popup(dependencies_win_opts)
   local dependencies_tree = create_dependencies_tree(dependencies_win.bufnr)
@@ -157,7 +231,7 @@ M.mount = function(dependencies)
 
   --- Setup the dependency usages win
   local dependency_usages_win_opts = vim.tbl_deep_extend('force', default_win_opts, {
-    border = { text = { top = 'Dependency Usage' } },
+    border = { text = { top = ' Dependency Usages ' } },
   })
   local dependency_usages_win = Popup(dependency_usages_win_opts)
   local dependency_usages_tree = create_dependency_usages_tree(dependency_usages_win.bufnr)
@@ -201,38 +275,22 @@ M.mount = function(dependencies)
   end)
 
   ---Setup the layout
-  local layout = Layout(
-    {
-      relative = 'editor',
-      position = '50%',
-      size = {
-        width = '60%',
-        height = '80%',
-      },
-    },
-    Layout.Box({
-      Layout.Box(dependencies_win, { size = '50%' }),
-      Layout.Box(dependency_usages_win, { size = '50%' }),
-    }, { dir = 'row' })
-  )
-
-  for _, win in pairs({ dependencies_win, dependency_usages_win }) do
-    win:on(event.BufLeave, function()
-      vim.schedule(function()
-        local current_buf = vim.api.nvim_get_current_buf()
-        for _, w in pairs({ dependencies_win, dependency_usages_win }) do
-          if w.bufnr == current_buf then
-            return
-          end
-        end
-        layout:unmount()
-      end)
-    end)
-    win:map('n', 'q', function()
-      layout:unmount()
-    end)
-  end
+  local layout = create_layout(dependencies_win, dependency_usages_win)
   layout:mount()
+  ---Setup the filter
+  local filter = create_dependency_filter(dependencies_win.winid, function(search)
+    local nodes = vim.tbl_filter(function(node)
+      return string.find(node.name, search) and true or false
+    end, dependencies_nodes)
+    vim.schedule(function()
+      vim.api.nvim_win_set_cursor(dependencies_win.winid, { 1, 0 })
+      dependencies_tree:set_nodes(nodes)
+      dependencies_tree:render()
+    end)
+  end)
+  dependencies_win:map('n', { '/', 's', 'f' }, function()
+    filter:mount()
+  end)
 end
 
 return M
