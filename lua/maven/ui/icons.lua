@@ -16,6 +16,8 @@ M.default = {
   package_dependents = '',
   package_dependencies = '',
   warning = '',
+  entry = ' ',
+  search = '',
 }
 
 return M
