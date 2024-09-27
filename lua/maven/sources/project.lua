@@ -1,4 +1,7 @@
+local Utils = require('maven.utils')
+
 ---@class Project
+---@field id string
 ---@field private _compact_name  string
 ---@field pom_xml_path string
 ---@field root_path string
@@ -11,6 +14,7 @@
 ---@field plugins Project.Plugin[]
 ---@field commands Project.Command[]
 local Project = {}
+Project.__index = Project
 
 ---Create a new instance of a Project
 ---@param root_path string
@@ -23,7 +27,7 @@ local Project = {}
 ---@param plugins? Project.Plugin[]
 ---@param commands? Project.Command[]
 ---@return Project
-function Project:new(
+function Project.new(
   root_path,
   pom_xml_path,
   group_id,
@@ -34,9 +38,9 @@ function Project:new(
   plugins,
   commands
 )
-  self.__index = self
-  self.lifecycles = self.default_lifecycles()
   return setmetatable({
+    id = Utils.uuid(),
+    lifecycles = Project.default_lifecycles(),
     root_path = root_path,
     pom_xml_path = pom_xml_path,
     group_id = group_id or '',
@@ -46,7 +50,7 @@ function Project:new(
     dependencies = dependencies or {},
     plugins = plugins or {},
     commands = commands or {},
-  }, self)
+  }, Project)
 end
 
 ---Get default lifecycles
@@ -81,11 +85,11 @@ end
 ---@param plugin Project.Plugin
 function Project:replace_plugin(plugin)
   local position
-  for index, value in ipairs(self.plugins) do
+  for index, item in ipairs(self.plugins) do
     if
-      value.group_id == plugin.group_id
-      and value.artifact_id == plugin.artifact_id
-      and value.version == plugin.version
+      item.group_id == plugin.group_id
+      and item.artifact_id == plugin.artifact_id
+      and item.version == plugin.version
     then
       position = index
       break
