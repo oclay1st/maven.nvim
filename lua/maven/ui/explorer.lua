@@ -1,68 +1,142 @@
 local NuiTree = require('nui.tree')
 local NuiLine = require('nui.line')
 local NuiSplit = require('nui.split')
-local NuiPopup = require('nui.popup')
 local Sources = require('maven.sources')
 local Utils = require('maven.utils')
 local CommandBuilder = require('maven.utils.cmd_builder')
-local Console = require('maven.utils.console')
+local console = require('maven.utils.console')
 local MavenConfig = require('maven.config')
 local highlights = require('maven.highlights')
 local icons = require('maven.ui.icons')
 
 local M = {}
 
-local console = Console.new()
-
-local node_types = {
-  command = { icon = icons.default.command },
+local node_type_props = {
+  command = {
+    icon = icons.default.command,
+    started_state_msg = ' ..running ',
+    pending_state_msg = ' ..pending ',
+  },
   commands = { icon = icons.default.tool_folder },
-  lifecycle = { icon = icons.default.tool },
+  lifecycle = {
+    icon = icons.default.tool,
+    started_state_msg = ' ..running ',
+    pending_state_msg = ' ..pending ',
+  },
   lifecycles = { icon = icons.default.tool_folder },
-  plugin_goal = { icon = icons.default.tool },
+  plugin_goal = {
+    icon = icons.default.tool,
+    started_state_msg = ' ..running ',
+    pending_state_msg = ' ..pending ',
+  },
   dependency = { icon = icons.default.package },
-  dependencies = { icon = icons.default.tool_folder },
-  plugin = { icon = icons.default.plugin },
-  plugins = { icon = icons.default.tool_folder },
+  dependencies = {
+    icon = icons.default.tool_folder,
+    started_state_msg = ' ..loading ',
+    pending_state_msg = ' ..pending ',
+  },
+  plugin = {
+    icon = icons.default.plugin,
+    started_state_msg = ' ..loading ',
+    pending_state_msg = ' ..pending ',
+  },
+  plugins = {
+    icon = icons.default.tool_folder,
+    started_state_msg = ' ..loading ',
+    pending_state_msg = ' ..pending ',
+  },
   project = { icon = icons.default.project },
 }
 
 ---Lookup for a project inside a list of projects and sub-projects (modules)
----@param path string
+---@param id string
 ---@param projects Project[]
 ---@return Project
-local lookup_project = function(path, projects)
+local lookup_project = function(id, projects)
   local project ---@type Project
   for _, item in ipairs(projects) do
-    if item.root_path == path then
+    if item.id == id then
       project = item
     end
   end
   return assert(project, 'Project not found')
 end
 
+---Execute the command node
+---@param node NuiTree.Node
+---@param tree NuiTree
+---@param project Project
+local load_command_node = function(node, tree, project)
+  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, node.cmd_args)
+  local show_output = MavenConfig.options.console.show_command_execution
+  console.execute_command(command.cmd, command.args, show_output, function(state)
+    vim.schedule(function()
+      node.state = state
+      tree:render()
+    end)
+  end)
+end
+
+---Execute the lifecycle goal node
+---@param node NuiTree.Node
+---@param tree NuiTree
+---@param project Project
+local load_lifecycle_node = function(node, tree, project)
+  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
+  local show_output = MavenConfig.options.console.show_lifecycle_execution
+  console.execute_command(command.cmd, command.args, show_output, function(state)
+    vim.schedule(function()
+      node.state = state
+      tree:render()
+    end)
+  end)
+end
+
+---Execute the plugin goal node
+---@param node NuiTree.Node
+---@param tree NuiTree
+---@param project Project
+local load_plugin_goal = function(node, tree, project)
+  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
+  local show_output = MavenConfig.options.console.show_plugin_goal_execution
+  console.execute_command(command.cmd, command.args, show_output, function(state)
+    vim.schedule(function()
+      node.state = state
+      tree:render()
+    end)
+  end)
+end
+
 ---Load the dependency nodes for the tree
 ---@param node NuiTree.Node
 ---@param tree NuiTree
 ---@param project Project
-local load_dependencies_nodes = function(node, tree, project)
-  Sources.load_project_dependencies(project.pom_xml_path, function(dependencies)
-    project:set_dependencies(dependencies)
+---@param on_success? fun()
+local load_dependencies_nodes = function(node, tree, project, on_success)
+  Sources.load_project_dependencies(project.pom_xml_path, function(state, dependencies)
     vim.schedule(function()
-      for _, dependency in ipairs(dependencies) do
-        local dependency_node = NuiTree.Node({
-          id = dependency.id,
-          text = dependency:get_compact_name(),
-          type = 'dependency',
-          scope = dependency.scope,
-          project_path = project.root_path,
-          is_duplicate = dependency.is_duplicate,
-        })
-        local _parent_id = dependency.parent_id and '-' .. dependency.parent_id or node:get_id()
-        tree:add_node(dependency_node, _parent_id)
+      if Utils.SUCCEED_STATE == state then
+        project:set_dependencies(dependencies)
+        for _, dependency in ipairs(dependencies) do
+          local dependency_node = NuiTree.Node({
+            id = dependency.id,
+            text = dependency:get_compact_name(),
+            type = 'dependency',
+            scope = dependency.scope,
+            project_id = project.id,
+            is_duplicate = dependency.is_duplicate,
+          })
+          local _parent_id = dependency.parent_id and '-' .. dependency.parent_id or node:get_id()
+          tree:add_node(dependency_node, _parent_id)
+        end
+        node.is_loaded = true
+        if on_success then
+          on_success()
+        else
+          node:expand()
+        end
       end
-      node.is_loaded = true
-      node:expand()
+      node.state = state
       tree:render()
     end)
   end)
@@ -73,25 +147,29 @@ end
 ---@param tree NuiTree
 ---@param project Project
 local load_plugins_nodes = function(node, tree, project)
-  Sources.load_project_plugins(project.pom_xml_path, function(plugins)
-    project:set_plugins(plugins)
+  Sources.load_project_plugins(project.pom_xml_path, function(state, plugins)
     vim.schedule(function()
-      local plugin_nodes = {}
-      for _, plugin in ipairs(plugins) do
-        local plugin_node = NuiTree.Node({
-          text = plugin:get_compact_name(),
-          type = 'plugin',
-          project_path = project.root_path,
-          is_loaded = false,
-          group_id = plugin.group_id,
-          artifact_id = plugin.artifact_id,
-          version = plugin.version,
-        })
-        table.insert(plugin_nodes, plugin_node)
+      if Utils.SUCCEED_STATE == state then
+        project:set_plugins(plugins)
+        local plugin_nodes = {}
+        for _, plugin in ipairs(project.plugins) do
+          local plugin_node = NuiTree.Node({
+            text = plugin:get_mini_name(),
+            type = 'plugin',
+            project_id = project.id,
+            is_loaded = false,
+            group_id = plugin.group_id,
+            artifact_id = plugin.artifact_id,
+            version = plugin.version,
+            description = plugin:get_compact_name(),
+          })
+          table.insert(plugin_nodes, plugin_node)
+        end
+        node.is_loaded = true
+        tree:set_nodes(plugin_nodes, node._id)
+        node:expand()
       end
-      node.is_loaded = true
-      tree:set_nodes(plugin_nodes, node._id)
-      node:expand()
+      node.state = state
       tree:render()
     end)
   end)
@@ -101,27 +179,30 @@ end
 ---@param node NuiTree.Node
 ---@param tree NuiTree
 ---@param project Project
-local load_plugin_goals_nodes = function(node, tree, project)
+local load_plugin_nodes = function(node, tree, project)
   Sources.load_project_plugin_details(
     node.group_id,
     node.artifact_id,
     node.version,
-    function(plugin)
-      project:replace_plugin(plugin)
+    function(state, plugin)
       vim.schedule(function()
-        local goal_nodes = {}
-        for _, goal in ipairs(plugin.goals) do
-          local goal_node = NuiTree.Node({
-            text = plugin.goal_prefix .. ':' .. goal.name,
-            type = 'plugin_goal',
-            cmd_arg = plugin.goal_prefix .. ':' .. goal.name,
-            project_path = project.root_path,
-          })
-          table.insert(goal_nodes, goal_node)
+        if Utils.SUCCEED_STATE == state then
+          project:replace_plugin(plugin)
+          local goal_nodes = {}
+          for _, goal in ipairs(plugin.goals) do
+            local goal_node = NuiTree.Node({
+              text = plugin.goal_prefix .. ':' .. goal.name,
+              type = 'plugin_goal',
+              cmd_arg = plugin.goal_prefix .. ':' .. goal.name,
+              project_id = project.id,
+            })
+            table.insert(goal_nodes, goal_node)
+          end
+          node.is_loaded = true
+          tree:set_nodes(goal_nodes, node._id)
+          node:expand()
         end
-        node.is_loaded = true
-        tree:set_nodes(goal_nodes, node._id)
-        node:expand()
+        node.state = state
         tree:render()
       end)
     end
@@ -140,7 +221,8 @@ local create_project_node = function(project)
       type = 'lifecycle',
       description = lifecycle.description,
       cmd_arg = lifecycle.cmd_arg,
-      project_path = project.root_path,
+      started_state_message = 'running',
+      project_id = project.id,
     })
   end
 
@@ -152,7 +234,8 @@ local create_project_node = function(project)
       type = 'command',
       description = command.description,
       cmd_args = command.cmd_args,
-      project_path = project.root_path,
+      started_state_message = 'running',
+      project_id = project.id,
     })
   end
 
@@ -160,23 +243,25 @@ local create_project_node = function(project)
   local commands_node = NuiTree.Node({
     text = 'Commands',
     type = 'commands',
-    project_path = project.root_path,
+    project_id = project.id,
   }, command_nodes)
 
   ---Map Lifecycles node
   local lifecycles_node = NuiTree.Node({
     text = 'Lifecycle',
     type = 'lifecycles',
-    project_path = project.root_path,
+    project_id = project.id,
   }, lifecycle_nodes)
 
   ---Map Dependencies node
   local dependencies_node = NuiTree.Node({
+    id = project.id .. '-dependencies',
     text = 'Dependencies',
     type = 'dependencies',
     is_loaded = false,
     cmd_args = { '' },
-    project_path = project.root_path,
+    started_state_message = 'loading',
+    project_id = project.id,
   })
 
   ---Map Plugins node
@@ -184,20 +269,20 @@ local create_project_node = function(project)
     text = 'Plugins',
     type = 'plugins',
     is_loaded = false,
-    project_path = project.root_path,
+    started_state_message = 'loading',
+    project_id = project.id,
   })
 
   local project_nodes = { lifecycles_node, dependencies_node, plugins_node }
-
-  if not vim.tbl_isempty(command_nodes) then
+  if #command_nodes > 0 then
     table.insert(project_nodes, 1, commands_node)
   end
 
   return NuiTree.Node({
-    id = Utils.uuid(),
+    id = project.id,
     text = project.name,
     type = 'project',
-    project_path = project.root_path,
+    project_id = project.id,
   }, project_nodes)
 end
 
@@ -208,7 +293,7 @@ local create_tree = function(bufnr)
     ns_id = MavenConfig.namespace,
     bufnr = bufnr,
     prepare_node = function(node)
-      local icon = node_types[node.type] and node_types[node.type].icon or ' '
+      local props = node_type_props[node.type]
       local line = NuiLine()
       line:append(' ' .. string.rep('  ', node:get_depth() - 1))
 
@@ -217,17 +302,19 @@ local create_tree = function(bufnr)
       else
         line:append('  ')
       end
-      line:append(icon .. ' ', 'SpecialChar')
-      if node.is_duplicate and not node:has_children() then
+      line:append(props.icon .. ' ', 'SpecialChar')
+      if node.type == 'dependency' and node.is_duplicate and not node:has_children() then
         line:append(node.text, highlights.MAVEN_DIM_TEXT)
       else
         line:append(node.text)
       end
-      if (node.type == 'command' or node.type == 'lifecycle') and node.description then
-        line:append(' (' .. node.description .. ')', highlights.MAVEN_DIM_TEXT)
+      if node.state == Utils.STARTED_STATE then
+        line:append(props.started_state_msg, 'DiagnosticVirtualTextInfo')
+      elseif node.state == Utils.PENDING_STATE then
+        line:append(props.pending_state_msg, 'DiagnosticVirtualTextWarn')
       end
-      if node.type == 'dependency' and node.scope then
-        line:append(' (' .. node.scope .. ')', highlights.MAVEN_DIM_TEXT)
+      if node.description then
+        line:append(' (' .. node.description .. ')', highlights.MAVEN_DIM_TEXT)
       end
       return line
     end,
@@ -253,6 +340,10 @@ local create_header = function()
   return line
 end
 
+---Setup key maps
+---@param win any
+---@param tree NuiTree
+---@param projects Project[]
 local setup_win_maps = function(win, tree, projects)
   win:mount()
 
@@ -263,10 +354,19 @@ local setup_win_maps = function(win, tree, projects)
   win:map('n', 'D', function()
     local node = tree:get_node()
     if node == nil then
+      vim.notify('Not project selected')
       return
     end
-    local project = lookup_project(node.project_path, projects)
-    require('maven.ui.dependencies').mount(project.name, project.dependencies)
+    local project = lookup_project(node.project_id, projects)
+    local dependencies_node = tree:get_node('-' .. project.id .. '-dependencies')
+    assert(dependencies_node, "Dependencies node doesn't exist on project: " .. project.root_path)
+    if dependencies_node.is_loaded then
+      require('maven.ui.dependencies').mount(project.name, project.dependencies)
+    else
+      load_dependencies_nodes(dependencies_node, tree, project, function()
+        require('maven.ui.dependencies').mount(project.name, project.dependencies)
+      end)
+    end
   end)
 
   win:map('n', '<enter>', function()
@@ -275,27 +375,20 @@ local setup_win_maps = function(win, tree, projects)
       return
     end
     local updated = false
-    local project = lookup_project(node.project_path, projects)
+    local project = lookup_project(node.project_id, projects)
     if node.type == 'command' then
-      local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, node.cmd_args)
-      local show_output = MavenConfig.options.console.show_command_execution
-      console:execute_command(command.cmd, command.args, show_output)
+      load_command_node(node, tree, project)
     elseif node.type == 'lifecycle' then
-      local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
-      local show_output = MavenConfig.options.console.show_lifecycle_execution
-      console:execute_command(command.cmd, command.args, show_output)
+      load_lifecycle_node(node, tree, project)
     elseif node.type == 'dependencies' and not node.is_loaded then
       load_dependencies_nodes(node, tree, project)
     elseif node.type == 'plugins' and not node.is_loaded then
       load_plugins_nodes(node, tree, project)
     elseif node.type == 'plugin' and not node.is_loaded then
-      load_plugin_goals_nodes(node, tree, project)
+      load_plugin_nodes(node, tree, project)
     elseif node.type == 'plugin_goal' then
-      local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
-      local show_output = MavenConfig.options.console.show_plugin_goal_execution
-      console:execute_command(command.cmd, command.args, show_output)
+      load_plugin_goal(node, tree, project)
     end
-
     if node:is_expanded() then
       updated = node:collapse() or updated
     else
@@ -331,12 +424,7 @@ M.mount = function(projects)
     },
   }
 
-  local win = nil
-  if MavenConfig.options.explorer.position == 'float' then
-    win = NuiPopup(default_win_options)
-  else
-    win = NuiSplit(default_win_options)
-  end
+  local win = NuiSplit(default_win_options)
 
   ---Create the header  line
   local header_line = create_header()
