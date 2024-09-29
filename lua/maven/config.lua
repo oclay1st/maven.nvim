@@ -43,7 +43,7 @@ local defaultOptions = {
 ---@type MavenOptions
 M.options = defaultOptions
 
-M.merge = function(args)
+M.setup = function(args)
   M.options = vim.tbl_deep_extend('force', M.options, args or {})
   return M.options
 end
