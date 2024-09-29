@@ -62,7 +62,7 @@ local function create_dependencies_tree(bufnr)
       line:append(icon .. ' ', icon_highlight)
       line:append(node.text)
       if node.scope then
-        line:append(' (' .. node.scope .. ')', highlights.MAVEN_DIM_TEXT)
+        line:append(' (' .. node.scope .. ')', highlights.DIM_TEXT)
       end
       return line
     end,
@@ -89,15 +89,15 @@ local function create_dependency_usages_tree(bufnr)
       end
       line:append(icon .. ' ', icon_highlight)
       if node.is_duplicate and not node:has_children() then
-        line:append(node.text, highlights.MAVEN_DIM_TEXT)
+        line:append(node.text, highlights.DIM_TEXT)
       else
         line:append(node.text)
       end
       if node.scope then
-        line:append(' (' .. node.scope .. ')', highlights.MAVEN_DIM_TEXT)
+        line:append(' (' .. node.scope .. ')', highlights.DIM_TEXT)
       end
       if node.conflict_version and not node:has_children() then
-        line:append(' conflict with ' .. node.conflict_version, highlights.MAVEN_ERROR_TEXT)
+        line:append(' conflict with ' .. node.conflict_version, highlights.ERROR_TEXT)
       end
       return line
     end,
@@ -129,6 +129,7 @@ local function create_dependency_filter(wind_id, on_change)
   local relative_row = win_height - 1
   local win_width = vim.api.nvim_win_get_width(wind_id)
   local input = Input({
+    ns_id = MavenConfig.namespace,
     relative = 'win',
     position = {
       row = relative_row,
@@ -165,8 +166,10 @@ end
 ---@param left_win NuiPopup
 ---@param right_win NuiPopup
 local function create_layout(left_win, right_win)
+  local prev_win = vim.api.nvim_get_current_win()
   local layout = Layout(
     {
+      ns_id = MavenConfig.namespace,
       relative = 'editor',
       position = '50%',
       size = {
@@ -190,16 +193,19 @@ local function create_layout(left_win, right_win)
           end
         end
         layout:unmount()
+        vim.api.nvim_set_current_win(prev_win)
       end)
     end)
     win:map('n', { '<esc>', 'q' }, function()
       layout:unmount()
+      vim.api.nvim_set_current_win(prev_win)
     end)
   end
   return layout
 end
 
 ---Mount component
+---@param project_name string
 ---@param dependencies Project.Dependency[]
 M.mount = function(project_name, dependencies)
   local default_win_opts = {
@@ -278,18 +284,24 @@ M.mount = function(project_name, dependencies)
   local layout = create_layout(dependencies_win, dependency_usages_win)
   layout:mount()
   ---Setup the filter
-  local filter = create_dependency_filter(dependencies_win.winid, function(search)
-    local nodes = vim.tbl_filter(function(node)
-      return string.find(node.name, search) and true or false
-    end, dependencies_nodes)
-    vim.schedule(function()
-      vim.api.nvim_win_set_cursor(dependencies_win.winid, { 1, 0 })
-      dependencies_tree:set_nodes(nodes)
-      dependencies_tree:render()
+  dependencies_win:map('n', { '/', 's' }, function()
+    local filter = create_dependency_filter(dependencies_win.winid, function(search)
+      local nodes = vim.tbl_filter(function(node)
+        return string.find(node.name, search) and true or false
+      end, dependencies_nodes)
+      vim.schedule(function()
+        vim.api.nvim_win_set_cursor(dependencies_win.winid, { 1, 0 })
+        dependencies_tree:set_nodes(nodes)
+        dependencies_tree:render()
+      end)
     end)
-  end)
-  dependencies_win:map('n', { '/', 's', 'f' }, function()
     filter:mount()
+  end)
+  dependency_usages_win:map('n', { '<c-s>' }, function()
+    vim.api.nvim_set_current_win(dependencies_win.winid)
+  end)
+  dependencies_win:map('n', { '<c-s>' }, function()
+    vim.api.nvim_set_current_win(dependency_usages_win.winid)
   end)
 end
 
