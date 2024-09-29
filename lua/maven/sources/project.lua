@@ -216,15 +216,27 @@ Plugin.__index = Plugin
 
 ---@alias Plugin Project.Plugin
 
+local patterns = {
+  '%-maven%-plugin',
+  '%-maven',
+  'maven%-',
+  '%-plugin%-maven',
+  '%-plugin',
+  'plugin%-',
+}
+
 ---@return string
 function Plugin:get_compact_name()
   return self.group_id .. ':' .. self.artifact_id .. ':' .. self.version
 end
 ---Get mini name
---- TODO: review later
+--- TODO: review logic
 ---@return string
-function Plugin:get_mini_name()
-  local name, _ = string.gsub(self.artifact_id, '(%-?maven%-?)*(%-?plugin%-?)', '')
+function Plugin:get_short_name()
+  local name = self.artifact_id
+  for _, pattern in ipairs(patterns) do
+    name, _ = string.gsub(name, pattern, '')
+  end
   return name
 end
 
