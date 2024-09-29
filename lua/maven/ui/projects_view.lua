@@ -1,15 +1,21 @@
 local NuiTree = require('nui.tree')
 local NuiLine = require('nui.line')
 local NuiSplit = require('nui.split')
+local DependenciesView = require('maven.ui.dependencies_view')
+local HelpView = require('maven.ui.help_view')
 local Sources = require('maven.sources')
 local Utils = require('maven.utils')
 local CommandBuilder = require('maven.utils.cmd_builder')
-local console = require('maven.utils.console')
+local Console = require('maven.utils.console')
 local MavenConfig = require('maven.config')
 local highlights = require('maven.highlights')
 local icons = require('maven.ui.icons')
 
 local M = {}
+
+local _is_visible = false ---@type boolean
+
+local win
 
 local node_type_props = {
   command = {
@@ -69,7 +75,7 @@ end
 local load_command_node = function(node, tree, project)
   local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, node.cmd_args)
   local show_output = MavenConfig.options.console.show_command_execution
-  console.execute_command(command.cmd, command.args, show_output, function(state)
+  Console.execute_command(command.cmd, command.args, show_output, function(state)
     vim.schedule(function()
       node.state = state
       tree:render()
@@ -84,7 +90,7 @@ end
 local load_lifecycle_node = function(node, tree, project)
   local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
   local show_output = MavenConfig.options.console.show_lifecycle_execution
-  console.execute_command(command.cmd, command.args, show_output, function(state)
+  Console.execute_command(command.cmd, command.args, show_output, function(state)
     vim.schedule(function()
       node.state = state
       tree:render()
@@ -99,7 +105,7 @@ end
 local load_plugin_goal = function(node, tree, project)
   local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
   local show_output = MavenConfig.options.console.show_plugin_goal_execution
-  console.execute_command(command.cmd, command.args, show_output, function(state)
+  Console.execute_command(command.cmd, command.args, show_output, function(state)
     vim.schedule(function()
       node.state = state
       tree:render()
@@ -154,7 +160,8 @@ local load_plugins_nodes = function(node, tree, project)
         local plugin_nodes = {}
         for _, plugin in ipairs(project.plugins) do
           local plugin_node = NuiTree.Node({
-            text = plugin:get_mini_name(),
+            id = Utils.uuid(),
+            text = plugin:get_short_name(),
             type = 'plugin',
             project_id = project.id,
             is_loaded = false,
@@ -304,7 +311,7 @@ local create_tree = function(bufnr)
       end
       line:append(props.icon .. ' ', 'SpecialChar')
       if node.type == 'dependency' and node.is_duplicate and not node:has_children() then
-        line:append(node.text, highlights.MAVEN_DIM_TEXT)
+        line:append(node.text, highlights.DIM_TEXT)
       else
         line:append(node.text)
       end
@@ -314,7 +321,7 @@ local create_tree = function(bufnr)
         line:append(props.pending_state_msg, 'DiagnosticVirtualTextWarn')
       end
       if node.description then
-        line:append(' (' .. node.description .. ')', highlights.MAVEN_DIM_TEXT)
+        line:append(' (' .. node.description .. ')', highlights.DIM_TEXT)
       end
       return line
     end,
@@ -326,29 +333,23 @@ end
 local create_header = function()
   local line = NuiLine()
   local separator = '  '
-  line:append(' ' .. icons.default.maven .. ' Maven ' .. separator, highlights.MAVEN_SPECIAL_TEXT)
+  line:append(' ' .. icons.default.maven .. ' Maven ' .. separator, highlights.SPECIAL_TEXT)
   line:append(
     icons.default.entry .. '' .. icons.default.tree .. ' Analyze Dependencies',
-    highlights.MAVEN_SPECIAL_TEXT
+    highlights.SPECIAL_TEXT
   )
-  line:append('<D>' .. separator, highlights.MAVEN_NORMAL_TEXT)
-  line:append(
-    icons.default.entry .. '' .. icons.default.help .. ' Help',
-    highlights.MAVEN_SPECIAL_TEXT
-  )
-  line:append('<H>' .. separator, highlights.MAVEN_NORMAL_TEXT)
+  line:append('<D>' .. separator, highlights.NORMAL_TEXT)
+  line:append(icons.default.entry .. '' .. icons.default.help .. ' Help', highlights.SPECIAL_TEXT)
+  line:append('<?>' .. separator, highlights.NORMAL_TEXT)
   return line
 end
 
 ---Setup key maps
----@param win any
 ---@param tree NuiTree
 ---@param projects Project[]
-local setup_win_maps = function(win, tree, projects)
-  win:mount()
-
-  win:map('n', 'q', function()
-    win:unmount()
+local setup_win_maps = function(tree, projects)
+  win:map('n', { '<esc>', 'q' }, function()
+    M.hide()
   end)
 
   win:map('n', 'D', function()
@@ -361,12 +362,16 @@ local setup_win_maps = function(win, tree, projects)
     local dependencies_node = tree:get_node('-' .. project.id .. '-dependencies')
     assert(dependencies_node, "Dependencies node doesn't exist on project: " .. project.root_path)
     if dependencies_node.is_loaded then
-      require('maven.ui.dependencies').mount(project.name, project.dependencies)
+      DependenciesView.mount(project.name, project.dependencies)
     else
       load_dependencies_nodes(dependencies_node, tree, project, function()
-        require('maven.ui.dependencies').mount(project.name, project.dependencies)
+        DependenciesView.mount(project.name, project.dependencies)
       end)
     end
+  end, { noremap = true, nowait = true })
+
+  win:map('n', '?', function()
+    HelpView.mount()
   end)
 
   win:map('n', '<enter>', function()
@@ -424,7 +429,10 @@ M.mount = function(projects)
     },
   }
 
-  local win = NuiSplit(default_win_options)
+  win = NuiSplit(default_win_options)
+  ---Mount the component
+  win:mount()
+  _is_visible = true
 
   ---Create the header  line
   local header_line = create_header()
@@ -436,7 +444,7 @@ M.mount = function(projects)
   if #projects == 0 then
     project_text = project_text .. ' (create a new project) '
   end
-  project_line:append(project_text, highlights.MAVEN_DIM_TEXT)
+  project_line:append(project_text, highlights.DIM_TEXT)
   project_line:render(win.bufnr, MavenConfig.namespace, 2)
 
   ---Create the tree
@@ -448,13 +456,31 @@ M.mount = function(projects)
   tree:set_nodes(nodes)
 
   ---Setup maps
-  setup_win_maps(win, tree, projects)
+  setup_win_maps(tree, projects)
 
   ---Render the tree
   tree:render(3)
   header_line:highlight(win.bufnr, MavenConfig.namespace, 1)
   project_line:highlight(win.bufnr, MavenConfig.namespace, 2)
   tree:render()
+end
+
+M.hide = function()
+  win:hide()
+  _is_visible = false
+end
+
+M.show = function()
+  win:show()
+  _is_visible = true
+end
+
+M.toggle = function()
+  if _is_visible then
+    M.hide()
+  else
+    M.show()
+  end
 end
 
 return M
