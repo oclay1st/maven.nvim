@@ -9,6 +9,27 @@ local DependencyTreeParser = {}
 
 DependencyTreeParser.__index = DependencyTreeParser
 
+---Fix an issue with the dependency graph plugin
+---@param dependencies Project.Dependency[]
+--- FIXME: some dependencies marked as duplicate have children.
+local regenerate_dependencies = function(dependencies)
+  for _, item in ipairs(dependencies) do
+    if item.is_duplicate then
+      local children = vim.tbl_filter(function(dep)
+        return dep.parent_id == item.id
+      end, dependencies)
+      if #children > 0 then
+        local correct_dependency = vim.tbl_filter(function(dep)
+          return dep:get_compact_name() == item:get_compact_name() and not dep.is_duplicate
+        end, dependencies)
+        for _, child in ipairs(children) do
+          child.parent_id = correct_dependency[1].id
+        end
+      end
+    end
+  end
+end
+
 ---Parse the dependency text
 ---@param text string
 ---@param id string
