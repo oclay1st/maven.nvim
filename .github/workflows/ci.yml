@@ -18,7 +18,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     name: pandoc to vimdoc
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: false # ${{ github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v3
       - name: panvimdoc
@@ -61,4 +61,3 @@ jobs:
           luarocks install luacheck
           luarocks install vusted
           vusted ./test
-ed ./test
