@@ -1,32 +1,30 @@
 local M = {}
 
-M.namespace = vim.api.nvim_create_namespace('maven')
-
-M.MAVEN_NORMAL_TEXT = 'MavenNormalText'
-M.MAVEN_SPECIAL_TEXT = 'MavenSpecialText'
-M.MAVEN_DIM_TEXT = 'MavenDimText'
-M.MAVEN_SPECIAL_TITLE = 'MavenSpecialTitle'
-M.MAVEN_ERROR_TEXT = 'MavenErrorText'
+M.NORMAL_TEXT = 'MavenNormalText'
+M.SPECIAL_TEXT = 'MavenSpecialText'
+M.DIM_TEXT = 'MavenDimText'
+M.SPECIAL_TITLE = 'MavenSpecialTitle'
+M.ERROR_TEXT = 'MavenErrorText'
 
 local highlights = {
   {
-    name = M.MAVEN_NORMAL_TEXT,
+    name = M.NORMAL_TEXT,
     config = { default = true, link = 'NonText' },
   },
   {
-    name = M.MAVEN_SPECIAL_TEXT,
+    name = M.SPECIAL_TEXT,
     config = { default = true, link = 'Special' },
   },
   {
-    name = M.MAVEN_DIM_TEXT,
+    name = M.DIM_TEXT,
     config = { default = true, link = 'Comment' },
   },
   {
-    name = M.MAVEN_SPECIAL_TITLE,
+    name = M.SPECIAL_TITLE,
     config = { default = true, link = 'Title' },
   },
   {
-    name = M.MAVEN_ERROR_TEXT,
+    name = M.ERROR_TEXT,
     config = { default = true, italic = true, fg = '#c53b53' },
   },
 }
