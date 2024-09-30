@@ -5,13 +5,14 @@
   </a>
 </div>
 
-# maven.nvim
-
-Maven plugin for Neovim
+**maven.nvim** is a Maven plugin for Neovim.
 
 <div>
   <img src ="assets/screenshot.png">
 </div>
+
+## 🔥 Status
+This plugin is under **development** and has some known issues, so it is not considered stable enough
 
 ## ✨ Features
 
