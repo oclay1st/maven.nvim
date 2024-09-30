@@ -9,6 +9,10 @@
 
 Maven plugin for Neovim
 
+<div>
+  <img src ="assets/screenshot.png">
+</div>
+
 ## ✨ Features
 
 - Execute lifecycle goals, plugins goals and custom commands
