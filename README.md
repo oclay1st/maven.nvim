@@ -12,7 +12,7 @@
 </div>
 
 ## 🔥 Status
-This plugin is under **development** and has some known issues, so it is not considered stable enough
+This plugin is under **development** and has some known issues, so it is not considered stable enough.
 
 ## ✨ Features
 
