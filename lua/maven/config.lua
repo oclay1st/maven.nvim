@@ -3,7 +3,7 @@ local M = {}
 
 M.namespace = vim.api.nvim_create_namespace('maven')
 
----@class ExplorerView
+---@class ProjectsView
 ---@field position string
 ---@field size integer
 
@@ -20,12 +20,12 @@ M.namespace = vim.api.nvim_create_namespace('maven')
 ---@field show_plugins_load_execution boolean
 
 ---@class MavenOptions
----@field explorer? ExplorerView
+---@field projects_view? ProjectsView
 ---@field console ConsoleView
 ---@field mvn_executable string the name or path of mvn
 ---@field custom_commands CustomCommand[]
 local defaultOptions = {
-  explorer = {
+  projects_view = {
     position = 'right',
     size = 68,
   },
