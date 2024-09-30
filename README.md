@@ -1,10 +1,7 @@
 <br/>
 <div align="center">
-  <a style="display:inline-block" href="https://github.com/oclay1st/maven.nvim">
+  <a  href="https://github.com/oclay1st/maven.nvim">
     <img src="assets/maven.png" alt="Logo" >
-  </a>
-  <a style="display:inline-block" href="https://github.com/oclay1st/maven.nvim">
-    <img src="assets/nvim.png" alt="Logo" >
   </a>
 </div>
 
