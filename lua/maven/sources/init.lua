@@ -6,6 +6,7 @@ local PomParser = require('maven.parsers.pom_xml_parser')
 local EffectivePomParser = require('maven.parsers.epom_xml_parser')
 local DependencyTreeParser = require('maven.parsers.dependency_tree_parser')
 local PluginXmlParser = require('maven.parsers.plugin_xml_parser')
+local HelpOptionsParser = require('maven.parsers.help_options_parser')
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Utils = require('maven.utils')
 local console = require('maven.utils.console')
@@ -110,6 +111,19 @@ M.load_project_plugin_details = function(group_id, artifact_id, version, callbac
     artifact_id .. '-' .. version .. '.jar'
   ):absolute()
   local command = CommandBuilder.build_read_zip_file_cmd(jar_file_path, Utils.maven_plugin_xml_path)
+  console.execute_command(command.cmd, command.args, false, _callback)
+end
+
+M.load_help_options = function(callback)
+  local _callback = function(state, job)
+    local help_options
+    if Utils.SUCCEED_STATE == state then
+      local output_lines = job:result()
+      help_options = HelpOptionsParser.parse(output_lines)
+    end
+    callback(state, help_options)
+  end
+  local command = CommandBuilder.build_mvn_help_cmd()
   console.execute_command(command.cmd, command.args, false, _callback)
 end
 

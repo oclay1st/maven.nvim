@@ -85,4 +85,13 @@ CommandBuilder.build_read_zip_file_cmd = function(zip_file_path, file_to_read_pa
   }
 end
 
+---Build the  help cmd
+---@return Command
+CommandBuilder.build_mvn_help_cmd = function()
+  return {
+    cmd = MavenConfig.options.mvn_executable,
+    args = { '--help' },
+  }
+end
+
 return CommandBuilder
