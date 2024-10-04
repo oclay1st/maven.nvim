@@ -6,6 +6,7 @@ local MavenConfig = require('maven.config')
 local M = {}
 
 local help_keys = {
+  { key = 'E', desc = 'Execute mvn command' },
   { key = 'D', desc = '[Projects] analyze dependencies' },
   { key = '/, s', desc = '[Dependencies] search' },
   { key = '<Ctrl>s', desc = '[Dependencies] switch window' },
