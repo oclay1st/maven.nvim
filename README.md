@@ -37,6 +37,7 @@ This plugin is under **development** and has some known issues, so it is not con
 ```lua
 {
    "oclay1st/maven.nvim",
+   cmd = 'Maven',
    dependencies = {
       "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
