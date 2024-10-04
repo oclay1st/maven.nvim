@@ -6,7 +6,7 @@ local ProjectView = require('maven.ui.projects_view')
 ---@class Maven
 local M = {}
 
-local is_mounted = false
+local projects_view
 
 ---Setup the plugin
 M.setup = function(opts)
@@ -15,13 +15,13 @@ M.setup = function(opts)
 end
 
 M.toggle = function()
-  if not is_mounted then
+  if not projects_view then
     local workspace_path = vim.fn.getcwd()
     local projects = Sources.scan_projects(workspace_path)
-    ProjectView.mount(projects)
-    is_mounted = true
+    projects_view = ProjectView.new(projects)
+    projects_view:mount()
   else
-    ProjectView.toggle()
+    projects_view:toggle()
   end
 end
 
