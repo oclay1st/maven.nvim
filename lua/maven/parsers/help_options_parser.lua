@@ -11,8 +11,8 @@ HelpOptionsParser.parse = function(help_content_lines)
         local opts, description = string.match(line, '(.+)%s%s(.+)')
         table.insert(options, { name = vim.trim(opts), description = description })
       elseif string.find(line, '^%s%s') then
-        local more_desc = string.match(line, '%s%s(%w.+)') or ''
-        options[#options].description = options[#options].description .. ' ' .. more_desc
+        local more_description = string.match(line, '%s%s(%w.+)') or ''
+        options[#options].description = options[#options].description .. ' ' .. more_description
       end
     end
   end
