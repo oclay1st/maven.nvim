@@ -49,7 +49,7 @@ function ExecuteView.new()
       },
     },
     _prev_win = vim.api.nvim_get_current_win(),
-    _input_prompt = Text(icons.default.command .. '  maven ', 'SpecialChar'),
+    _input_prompt = Text(icons.default.command .. '  mvn ', 'SpecialChar'),
   }, ExecuteView)
 end
 
