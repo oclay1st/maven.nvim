@@ -5,7 +5,7 @@
   </a>
 </div>
 
-**maven.nvim** is a Maven plugin for Neovim.
+**maven.nvim** is a plugin to use Maven in Neovim.
 
 <div>
   <img src ="assets/screenshot.png">
