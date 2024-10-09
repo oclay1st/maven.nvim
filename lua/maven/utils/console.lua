@@ -68,14 +68,11 @@ local function enqueue_job(job, callback)
 end
 
 local function dequeue_job(job)
-  local pos
   for index, value in ipairs(_jobs) do
     if value.pid == job.pid then
-      pos = index
-      break
+      _jobs[index] = nil
     end
   end
-  table.remove(_jobs, pos)
 end
 
 ---Execute maven command
