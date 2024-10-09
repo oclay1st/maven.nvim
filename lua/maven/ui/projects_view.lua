@@ -46,6 +46,7 @@ local node_type_props = {
     started_state_msg = ' ..loading ',
     pending_state_msg = ' ..pending ',
   },
+  modules = { icon = icons.default.tool_folder },
   project = { icon = icons.default.project },
 }
 
@@ -69,21 +70,24 @@ function ProjectView.new(projects)
   }, ProjectView)
 end
 
----Lookup for a project inside a list of projects and sub-projects (modules)
+---@private Lookup for a project inside a list of projects and sub-projects (modules)
 ---@param id string
----@param projects Project[]
 ---@return Project
-local lookup_project = function(id, projects)
+function ProjectView:_lookup_project(id)
   local project ---@type Project
-  for _, item in ipairs(projects) do
-    if item.id == id then
-      project = item
+  local function _lookup(projects)
+    for _, item in ipairs(projects) do
+      if item.id == id then
+        project = item
+      end
+      _lookup(item.modules)
     end
   end
+  _lookup(self.projects)
   return assert(project, 'Project not found')
 end
 
----Execute the command node
+---@private Execute the command node
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_command_node(node, project)
@@ -97,7 +101,7 @@ function ProjectView:_load_command_node(node, project)
   end)
 end
 
----Execute the lifecycle goal node
+---@private Execute the lifecycle goal node
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_lifecycle_node(node, project)
@@ -111,7 +115,7 @@ function ProjectView:_load_lifecycle_node(node, project)
   end)
 end
 
----Execute the plugin goal node
+---@private Execute the plugin goal node
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_plugin_goal(node, project)
@@ -125,7 +129,7 @@ function ProjectView:_load_plugin_goal(node, project)
   end)
 end
 
----Load the dependency nodes for the tree
+---@private Load the dependency nodes for the tree
 ---@param node NuiTree.Node
 ---@param project Project
 ---@param on_success? fun()
@@ -158,7 +162,7 @@ function ProjectView:_load_dependencies_nodes(node, project, on_success)
   end)
 end
 
----Load the plugin nodes for the tree
+---@private Load the plugin nodes for the tree
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_plugins_nodes(node, project)
@@ -191,7 +195,7 @@ function ProjectView:_load_plugins_nodes(node, project)
   end)
 end
 
----Load the goal nodes for the tree
+---@private Load the goal nodes for the tree
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_plugin_nodes(node, project)
@@ -224,10 +228,10 @@ function ProjectView:_load_plugin_nodes(node, project)
   )
 end
 
----Create a project node
+---@private Create a project node
 ---@param project Project
 ---@return NuiTree.Node
-local create_project_node = function(project)
+function ProjectView:_create_project_node(project)
   ---Map lifecycle nodes
   local lifecycle_nodes = {}
   for index, lifecycle in ipairs(project.lifecycles) do
@@ -288,7 +292,24 @@ local create_project_node = function(project)
     project_id = project.id,
   })
 
+  local modules_nodes = {}
+  for _, module in ipairs(project.modules) do
+    local module_node = self:_create_project_node(module)
+    table.insert(modules_nodes, module_node)
+  end
+
+  local modules_node = NuiTree.Node({
+    text = 'Modules',
+    type = 'modules',
+    project_id = project.id,
+  }, modules_nodes)
+
   local project_nodes = { lifecycles_node, dependencies_node, plugins_node }
+
+  if #modules_nodes > 0 then
+    table.insert(project_nodes, modules_node)
+  end
+
   if #command_nodes > 0 then
     table.insert(project_nodes, 1, commands_node)
   end
@@ -335,8 +356,8 @@ function ProjectView:_create_tree()
   })
 
   local nodes = {}
-  for index, value in ipairs(self.projects) do
-    nodes[index] = create_project_node(value)
+  for index, project in ipairs(self.projects) do
+    nodes[index] = self:_create_project_node(project)
   end
   self._tree:set_nodes(nodes)
   self._tree:render(3)
@@ -382,12 +403,12 @@ end
 function ProjectView:_setup_win_maps()
   self._win:map('n', { '<esc>', 'q' }, function()
     self:hide()
-  end)
+  end, { noremap = true, nowait = true })
 
   self._win:map('n', 'E', function()
     local execute_view = ExecuteView.new()
     execute_view:mount()
-  end)
+  end, { noremap = true, nowait = true })
 
   self._win:map('n', 'D', function()
     local node = self._tree:get_node()
@@ -395,7 +416,7 @@ function ProjectView:_setup_win_maps()
       vim.notify('Not project selected')
       return
     end
-    local project = lookup_project(node.project_id, self.projects)
+    local project = self:_lookup_project(node.project_id)
     local dependencies_node = self._tree:get_node('-' .. project.id .. '-dependencies')
     assert(dependencies_node, "Dependencies node doesn't exist on project: " .. project.root_path)
     if dependencies_node.is_loaded then
@@ -411,7 +432,7 @@ function ProjectView:_setup_win_maps()
 
   self._win:map('n', '?', function()
     HelpView.mount()
-  end)
+  end, { noremap = true, nowait = true })
 
   self._win:map('n', '<enter>', function()
     local node = self._tree:get_node()
@@ -419,7 +440,7 @@ function ProjectView:_setup_win_maps()
       return
     end
     local updated = false
-    local project = lookup_project(node.project_id, self.projects)
+    local project = self:_lookup_project(node.project_id)
     if node.type == 'command' then
       self:_load_command_node(node, project)
     elseif node.type == 'lifecycle' then

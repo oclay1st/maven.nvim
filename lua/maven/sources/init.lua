@@ -15,41 +15,53 @@ local pom_xml_file_pattern = '**/pom.xml$'
 
 local M = {}
 
+local scanned_pom_list = {}
+
+local custom_commands = {}
+
 local create_custom_commands = function()
-  local custom_commands = {}
+  local _commands = {}
   for index, custom_command in ipairs(MavenConfig.options.custom_commands) do
-    custom_commands[index] =
+    _commands[index] =
       Project.Command(custom_command.name, custom_command.description, custom_command.cmd_args)
   end
-  return custom_commands
+  return _commands
 end
 
-local create_project_from_pom = function(pom_xml_path)
+M.create_project_from_pom = function(pom_xml_path)
   local pom = PomParser.parse_file(pom_xml_path)
   local project_path = pom_xml_path:gsub(pom_xml_file_pattern, '')
-  return Project.new(
-    project_path,
-    pom_xml_path,
-    pom.group_id,
-    pom.artifact_id,
-    pom.version,
-    pom.name
-  )
+  local project =
+    Project.new(project_path, pom_xml_path, pom.group_id, pom.artifact_id, pom.version, pom.name)
+  project:set_commands(custom_commands)
+  for _, module_path in ipairs(pom.module_paths) do
+    local module_pom = Path:new(project_path, module_path, 'pom.xml') ---@type Path
+    local module_pom_path = module_pom:absolute()
+    if module_pom:exists() and not vim.tbl_contains(scanned_pom_list, module_pom_path) then
+      local module_project = M.create_project_from_pom(module_pom_path)
+      project:add_module(module_project)
+      table.insert(scanned_pom_list, module_pom_path)
+    end
+  end
+  return project
 end
 
 ---Load the maven projects given a directory
 ---@param base_path string
 ---@return Project[]
 M.scan_projects = function(base_path)
+  scanned_pom_list = {}
+  custom_commands = create_custom_commands()
   local projects = {}
-  local custom_commands = create_custom_commands()
   scan.scan_dir(base_path, {
     search_pattern = pom_xml_file_pattern,
     depth = 10,
     on_insert = function(pom_xml_path, _)
-      local project = create_project_from_pom(pom_xml_path)
-      project:set_commands(custom_commands)
-      table.insert(projects, project)
+      if not vim.tbl_contains(scanned_pom_list, pom_xml_path) then
+        local project = M.create_project_from_pom(pom_xml_path)
+        table.insert(projects, project)
+        table.insert(scanned_pom_list, pom_xml_path)
+      end
     end,
   })
   return projects

@@ -13,6 +13,7 @@ local Utils = require('maven.utils')
 ---@field dependencies Project.Dependency[]
 ---@field plugins Project.Plugin[]
 ---@field commands Project.Command[]
+---@field modules table[string|Project[]]
 local Project = {}
 Project.__index = Project
 
@@ -26,6 +27,7 @@ Project.__index = Project
 ---@param dependencies? Project.Dependency[]
 ---@param plugins? Project.Plugin[]
 ---@param commands? Project.Command[]
+---@param modules? Project[]
 ---@return Project
 function Project.new(
   root_path,
@@ -36,7 +38,8 @@ function Project.new(
   name,
   dependencies,
   plugins,
-  commands
+  commands,
+  modules
 )
   return setmetatable({
     id = Utils.uuid(),
@@ -50,6 +53,7 @@ function Project.new(
     dependencies = dependencies or {},
     plugins = plugins or {},
     commands = commands or {},
+    modules = modules or {},
   }, Project)
 end
 
@@ -75,29 +79,29 @@ function Project:set_dependencies(dependencies)
   self.dependencies = dependencies
 end
 
----Add a new plugin
+---Set plugins
 ---@param plugins Project.Plugin[]
 function Project:set_plugins(plugins)
   self.plugins = plugins
 end
 
+---@param module Project
+function Project:add_module(module)
+  table.insert(self.modules, module)
+end
+
 ---Replace plugin
 ---@param plugin Project.Plugin
 function Project:replace_plugin(plugin)
-  local position
   for index, item in ipairs(self.plugins) do
     if
       item.group_id == plugin.group_id
       and item.artifact_id == plugin.artifact_id
       and item.version == plugin.version
     then
-      position = index
-      break
+      self.plugins[index] = plugin
     end
   end
-  assert(position, 'Plugin not found: ' .. plugin:get_compact_name())
-  table.remove(self.plugins, position)
-  table.insert(self.plugins, position, plugin)
 end
 
 ---Set commands
