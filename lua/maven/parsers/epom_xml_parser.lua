@@ -45,7 +45,7 @@ function EffectivePomParser.parse(epom_xml_content)
   local xml_handler = handler:new()
   local xml_parser = xml2lua.parser(xml_handler)
   xml_parser:parse(epom_xml_content)
-  _xml = xml_handler.root
+  local _xml = xml_handler.root
   assert(_xml.project, 'Tag <plugin> not found on epom file')
   return {
     group_id = assert(_xml.project.groupId, 'Tag <groupId> not found on epom file'),
