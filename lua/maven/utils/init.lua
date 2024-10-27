@@ -15,10 +15,26 @@ M.uuid = function()
   end)
 end
 
-M.maven_data_path = Path:new(vim.fn.stdpath('cache'), 'maven'):absolute()
+M.maven_data_path = Path:new(vim.fn.stdpath('data'), 'maven'):absolute()
 
 M.maven_local_repository_path = Path:new(Path.path.home, '.m2', 'repository'):absolute()
 
 M.maven_plugin_xml_path = 'META-INF/maven/plugin.xml'
+
+M.archetypes_catalog_url = 'https://repo.maven.apache.org/maven2/archetype-catalog.xml'
+
+M.archetypes_json_path = M.maven_data_path .. Path.path.sep .. 'archetypes.json'
+
+M.archetypes_local_catalog_path =
+  Path:new(M.maven_local_repository_path, 'archetype-catalog-central.xml')
+
+M.get_plugin_root_dir = function()
+  local source = debug.getinfo(1).source
+  local dir_path = source:match('@(.*/)') or source:match('@(.*\\)')
+  if dir_path == nil then
+    return nil
+  end
+  return dir_path .. '..'
+end
 
 return M

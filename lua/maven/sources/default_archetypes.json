@@ -1,0 +1,56 @@
+[
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-quickstart",
+    "versions": ["1.5"],
+    "description": "An archetype which contains a sample Maven project"
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-archetype",
+    "versions": ["1.0"],
+    "description": "An archetype which contains a sample archetype."
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-j2ee-simple",
+    "versions": ["1.0"],
+    "description": "An archetype which contains a simple sample J2EE application"
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-plugin",
+    "versions": ["1.2"],
+    "description": "An archetype which contains a sample Maven plugin"
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-plugin-site",
+    "versions": ["1.1"],
+    "description": "An archetype which contains a sample Maven plugin site"
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-portlet",
+    "versions": ["1.0-alpha-4"],
+    "description": ""
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-site",
+    "versions": ["1.1"],
+    "description": "An archetype which contains a sample Maven site"
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-site-simple",
+    "versions": ["1.1"],
+    "description": "An archetype which contains a sample archetype."
+  },
+  {
+    "group_id": "org.apache.maven.archetypes",
+    "artifact_id": "maven-archetype-webapp",
+    "versions": ["1.0"],
+    "description": "An archetype which contains a sample Maven Webapp project"
+  }
+]

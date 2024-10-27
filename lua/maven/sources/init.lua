@@ -1,4 +1,5 @@
 local scan = require('plenary.scandir')
+local curl = require('plenary.curl')
 local Project = require('maven.sources.project')
 local MavenConfig = require('maven.config')
 local Path = require('plenary.path')
@@ -7,6 +8,8 @@ local EffectivePomParser = require('maven.parsers.epom_xml_parser')
 local DependencyTreeParser = require('maven.parsers.dependency_tree_parser')
 local PluginXmlParser = require('maven.parsers.plugin_xml_parser')
 local HelpOptionsParser = require('maven.parsers.help_options_parser')
+local ArchetypeCatalogParser = require('maven.parsers.archetype_catalog_parser')
+local ArchetypeJsonParser = require('maven.parsers.archetype_json_parser')
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Utils = require('maven.utils')
 local console = require('maven.utils.console')
@@ -15,9 +18,9 @@ local pom_xml_file_pattern = '**/pom.xml$'
 
 local M = {}
 
-local scanned_pom_list = {}
+local scanned_pom_list ---@type string[]
 
-local custom_commands = {}
+local custom_commands ---@type string[]
 
 local create_custom_commands = function()
   local _commands = {}
@@ -137,6 +140,49 @@ M.load_help_options = function(callback)
   end
   local command = CommandBuilder.build_mvn_help_cmd()
   console.execute_command(command.cmd, command.args, false, _callback)
+end
+
+M.load_archetype_catalog = function(callback)
+  ---@type Path
+  local archetypes_path = Path:new(Utils.archetypes_json_path)
+  local local_catalog_path = Path:new(Utils.archetypes_local_catalog_path)
+  if archetypes_path:exists() then
+    local archetypes = ArchetypeJsonParser:parse_file(archetypes_path:absolute())
+    callback(archetypes)
+  elseif local_catalog_path:exists() then
+    local archetypes = ArchetypeCatalogParser.parse_file(local_catalog_path:absolute())
+    callback(archetypes)
+    ArchetypeJsonParser:export(archetypes, archetypes_path:absolute())
+  else
+    local catalog_path = os.tmpname()
+    curl.get(Utils.archetypes_catalog_url, {
+      output = catalog_path,
+      callback = function()
+        vim.schedule(function()
+          local archetypes = ArchetypeCatalogParser.parse_file(catalog_path)
+          callback(archetypes)
+          ArchetypeJsonParser:export(archetypes, archetypes_path:absolute())
+        end)
+      end,
+      on_error = function(message)
+        vim.notify(message, vim.log.levels.ERROR)
+      end,
+    })
+  end
+end
+
+M.load_default_archetype_catalog = function()
+  ---@type  Path
+  local catalog_path = Path:new(Utils.get_plugin_root_dir(), 'sources', 'default_archetypes.json')
+  return ArchetypeJsonParser:parse_file(catalog_path:absolute())
+end
+
+M.setup = function()
+  ---@type Path
+  local data_path = Path:new(Utils.maven_data_path)
+  if not data_path:exists() then
+    data_path:mkdir()
+  end
 end
 
 return M

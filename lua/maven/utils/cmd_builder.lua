@@ -7,6 +7,13 @@ local MavenConfig = require('maven.config')
 ---@class CommandBuilder
 local CommandBuilder = {}
 
+---Normalize param
+---@param value string
+---@return string
+local function normalize(value)
+  return '"' .. value .. '"'
+end
+
 ---Build the mvn cmd
 ---@param pom_xml_path string
 ---@param extra_args string[]
@@ -16,7 +23,7 @@ CommandBuilder.build_mvn_cmd = function(pom_xml_path, extra_args)
     '-B',
     '-N',
     '-f',
-    pom_xml_path,
+    normalize(pom_xml_path),
   }
   for _, value in ipairs(extra_args) do
     table.insert(_args, value)
@@ -39,7 +46,7 @@ CommandBuilder.build_mvn_dependencies_cmd = function(pom_xml_path, output_dir, o
       '-B',
       '-N',
       '-f',
-      pom_xml_path,
+      normalize(pom_xml_path),
       'com.github.ferstl:depgraph-maven-plugin:4.0.2:graph',
       '-DgraphFormat=text',
       '-DshowVersions=true',
@@ -63,7 +70,7 @@ CommandBuilder.build_mvn_effective_pom_cmd = function(pom_xml_path, output_file)
       '-B',
       '-N',
       '-f',
-      pom_xml_path,
+      normalize(pom_xml_path),
       'help:effective-pom',
       '-Doutput=' .. output_file,
     },
@@ -91,6 +98,37 @@ CommandBuilder.build_mvn_help_cmd = function()
   return {
     cmd = MavenConfig.options.mvn_executable,
     args = { '--help' },
+  }
+end
+
+---Build the create project cmd
+---@param project_name string
+---@param project_package string
+---@param archetype_group_id string
+---@param archetype_artifact_id string
+---@param archetype_version string
+---@param directory string
+---@return Command
+CommandBuilder.create_project = function(
+  project_name,
+  project_package,
+  archetype_group_id,
+  archetype_artifact_id,
+  archetype_version,
+  directory
+)
+  return {
+    cmd = MavenConfig.options.mvn_executable,
+    args = {
+      'archetype:generate',
+      '-DartifactId=' .. project_name,
+      '-DgroupId=' .. project_package,
+      '-DarchetypeGroupId=' .. archetype_group_id,
+      '-DarchetypeArtifactId=' .. archetype_artifact_id,
+      '-DarchetypeVersion=' .. archetype_version,
+      '-DoutputDirectory=' .. directory,
+      '-DinteractiveMode=false',
+    },
   }
 end
 

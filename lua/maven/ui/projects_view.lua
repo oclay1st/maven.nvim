@@ -2,7 +2,6 @@ local NuiTree = require('nui.tree')
 local NuiLine = require('nui.line')
 local NuiSplit = require('nui.split')
 local DependenciesView = require('maven.ui.dependencies_view')
-local ExecuteView = require('maven.ui.execute_view')
 local HelpView = require('maven.ui.help_view')
 local Sources = require('maven.sources')
 local Utils = require('maven.utils')
@@ -372,16 +371,20 @@ function ProjectView:_create_menu_header_line()
   local separator = '  '
   line:append(' ' .. icons.default.maven .. ' Maven ' .. separator, highlights.SPECIAL_TEXT)
   line:append(
+    icons.default.entry .. '' .. icons.default.command .. ' Create',
+    highlights.SPECIAL_TEXT
+  )
+  line:append('<c>' .. separator, highlights.NORMAL_TEXT)
+  line:append(
+    icons.default.entry .. '' .. icons.default.tree .. ' Analyze',
+    highlights.SPECIAL_TEXT
+  )
+  line:append('<a>' .. separator, highlights.NORMAL_TEXT)
+  line:append(
     icons.default.entry .. '' .. icons.default.command .. ' Execute',
     highlights.SPECIAL_TEXT
   )
-  line:append('<E>' .. separator, highlights.NORMAL_TEXT)
-
-  line:append(
-    icons.default.entry .. '' .. icons.default.tree .. ' Analyze Dependencies',
-    highlights.SPECIAL_TEXT
-  )
-  line:append('<D>' .. separator, highlights.NORMAL_TEXT)
+  line:append('<e>' .. separator, highlights.NORMAL_TEXT)
   line:append(icons.default.entry .. '' .. icons.default.help .. ' Help', highlights.SPECIAL_TEXT)
   line:append('<?>' .. separator, highlights.NORMAL_TEXT)
   self._menu_header_line = line
@@ -405,12 +408,15 @@ function ProjectView:_setup_win_maps()
     self:hide()
   end, { noremap = true, nowait = true })
 
-  self._win:map('n', 'E', function()
-    local execute_view = ExecuteView.new()
-    execute_view:mount()
+  self._win:map('n', 'c', function()
+    require('maven').show_initializer_view()
+  end)
+
+  self._win:map('n', 'e', function()
+    require('maven').show_execute_view()
   end, { noremap = true, nowait = true })
 
-  self._win:map('n', 'D', function()
+  self._win:map('n', 'a', function()
     local node = self._tree:get_node()
     if node == nil then
       vim.notify('Not project selected')
@@ -434,7 +440,7 @@ function ProjectView:_setup_win_maps()
     HelpView.mount()
   end, { noremap = true, nowait = true })
 
-  self._win:map('n', '<enter>', function()
+  self._win:map('n', { '<enter>', '<2-LeftMouse>' }, function()
     local node = self._tree:get_node()
     if node == nil then
       return
@@ -521,6 +527,10 @@ function ProjectView:toggle()
   else
     self:show()
   end
+end
+
+function ProjectView:unmount()
+  self._win:unmount()
 end
 
 return ProjectView
