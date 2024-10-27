@@ -132,11 +132,10 @@ end
 function DependenciesView:_toggle_filter()
   if self._is_filter_visible then
     self._dependency_filter:hide()
-    self._is_filter_visible = false
   else
     self._dependency_filter:show()
-    self._is_filter_visible = true
   end
+  self._is_filter_visible = not self._is_filter_visible
 end
 
 ---@private Create the dependencies tree
@@ -294,12 +293,15 @@ function DependenciesView:_create_dependency_filter()
     end,
   })
 
-  self._dependency_filter:on(event.BufLeave, function()
-    self._dependency_filter:hide()
+  self._dependency_filter:map('i', '<enter>', function()
+    vim.cmd('stopinsert')
+    self:_toggle_filter()
   end)
-
+  self._dependency_filter:map('n', '<enter>', function()
+    self:_toggle_filter()
+  end)
   self._dependency_filter:map('n', { '<esc>', 'q' }, function()
-    self._dependency_filter:hide()
+    self:_toggle_filter()
   end)
 end
 
@@ -330,11 +332,13 @@ function DependenciesView:_create_layout()
             return
           end
         end
+        self._dependency_filter:unmount()
         self._layout:unmount()
         vim.api.nvim_set_current_win(self._prev_win)
       end)
     end)
     win:map('n', { '<esc>', 'q' }, function()
+      self._dependency_filter:unmount()
       self._layout:unmount()
       vim.api.nvim_set_current_win(self._prev_win)
     end)
