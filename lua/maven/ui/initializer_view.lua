@@ -305,7 +305,9 @@ function InitializerView:_quit_all(force)
     for _, win in ipairs(wins) do
       win:unmount()
     end
-    vim.api.nvim_set_current_win(self._prev_win)
+    if vim.api.nvim_win_is_valid(self._prev_win) then
+      vim.api.nvim_set_current_win(self._prev_win)
+    end
   end
 end
 
