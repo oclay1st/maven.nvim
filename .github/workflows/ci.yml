@@ -37,7 +37,7 @@ jobs:
       - name: luarocks
         uses: leafo/gh-actions-luarocks@v4
 
-      - name: run test
+      - name: run tests
         shell: bash
         run: |
           luarocks install luacheck

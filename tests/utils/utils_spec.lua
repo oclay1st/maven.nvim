@@ -1,6 +1,6 @@
 local Utils = require('maven.utils')
 
-describe('should be awesome', function()
+describe('should be util', function()
   it('should have states', function()
     assert.same(Utils.STARTED_STATE, 'STARTED')
     assert.same(Utils.FAILED_STATE, 'FAILED')

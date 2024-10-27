@@ -2,3 +2,4 @@ cspell.json
 .luacheckcache
 luacov.*.out
 .tests
+.vscode
