@@ -18,6 +18,15 @@ M.namespace = vim.api.nvim_create_namespace('maven')
 ---@field show_plugin_goal_execution boolean
 ---@field show_dependencies_load_execution boolean
 ---@field show_plugins_load_execution boolean
+---@field show_create_project_execution boolean
+
+---@class InitializerView
+---@field default_package string
+---@field workspaces Workspace[]
+
+---@class Workspace
+---@field name string
+---@field path string
 
 ---@class MavenOptions
 ---@field projects_view? ProjectsView
@@ -29,12 +38,20 @@ local defaultOptions = {
     position = 'right',
     size = 68,
   },
+  initializer_view = {
+    default_package = '',
+    workspaces = {
+      { name = 'HOME', path = vim.loop.os_homedir() },
+      { name = 'CURRENT_DIR', path = vim.fn.getcwd() },
+    },
+  },
   console = {
     show_command_execution = true,
     show_lifecycle_execution = true,
     show_plugin_goal_execution = true,
     show_dependencies_load_execution = false,
     show_plugins_load_execution = false,
+    show_create_project_execution = true,
   },
   mvn_executable = 'mvn',
   custom_commands = {},

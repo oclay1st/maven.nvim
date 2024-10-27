@@ -12,10 +12,11 @@
 </div>
 
 ## 🔥 Status
-This plugin is under **development** and has some known issues, so it is not considered stable enough.
+This plugin is under **Development**.
 
 ## ✨ Features
 
+- Create projects from archetypes
 - Execute lifecycle goals, plugins goals and custom commands
 - List dependencies and their relationship
 - Analyze dependencies usages, conflicts and duplications
@@ -37,7 +38,7 @@ This plugin is under **development** and has some known issues, so it is not con
 ```lua
 {
    "oclay1st/maven.nvim",
-   cmd = 'Maven',
+   cmd = { "Maven", "MavenInit", "MavenExec" },
    dependencies = {
       "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
@@ -59,12 +60,20 @@ This plugin is under **development** and has some known issues, so it is not con
     position = 'right',
     size = 68,
   },
+  initializer_view = {
+    default_package = '', -- Example: io.github.username
+    workspaces = {
+      { name = "HOME", path = vim.loop.os_homedir() },
+      { name = "CURRENT_DIR", path = vim.fn.getcwd() },
+    },
+  },
   console = {
     show_command_execution = true,
     show_lifecycle_execution = true,
     show_plugin_goal_execution = true,
     show_dependencies_load_execution = false,
     show_plugins_load_execution = false,
+    show_create_project_execution = false,
   },
   mvn_executable = 'mvn',
   custom_commands = {
