@@ -13,10 +13,10 @@ local CommandBuilder = require('maven.utils.cmd_builder')
 local Console = require('maven.utils.console')
 
 ---@class InitializerView
----@field private _project_package_component NuiInput
----@field private _project_package string
 ---@field private _project_name_component NuiInput
 ---@field private _project_name string
+---@field private _project_package_component NuiInput
+---@field private _project_package string
 ---@field private _archetype_component ArchetypeList
 ---@field private _archetype Archetype
 ---@field private _archetype_version_component NuiPopup
@@ -260,7 +260,7 @@ function InitializerView:_create_project()
   directory:mkdir()
   local _callback = function(state)
     vim.schedule(function()
-      if Utils.SUCCEED_STATE == state then
+      if state == Utils.SUCCEED_STATE then
         local choice = vim.fn.confirm(
           'Project created successfully \nDo you want to switch to the New Project?',
           '&Yes\n&No'
@@ -269,13 +269,15 @@ function InitializerView:_create_project()
           vim.api.nvim_set_current_dir(directory:absolute())
           require('maven').refresh()
         end
+      elseif state == Utils.FAILED_STATE then
+        vim.notify('Error creating project: ' .. self._project_name, vim.log.levels.ERROR)
       end
     end)
   end
   vim.notify('Creating a new Maven Project...')
   local command = CommandBuilder.create_project(
-    self._project_name,
-    self._project_package,
+    vim.trim(self._project_name),
+    vim.trim(self._project_package),
     self._archetype.group_id,
     self._archetype.artifact_id,
     self._archetype_version,
