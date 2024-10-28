@@ -36,7 +36,7 @@ M.namespace = vim.api.nvim_create_namespace('maven')
 local defaultOptions = {
   projects_view = {
     position = 'right',
-    size = 68,
+    size = 65,
   },
   initializer_view = {
     default_package = '',

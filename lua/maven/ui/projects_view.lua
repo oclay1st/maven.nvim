@@ -368,7 +368,7 @@ end
 ---@private Create the header line
 function ProjectView:_create_menu_header_line()
   local line = NuiLine()
-  local separator = '  '
+  local separator = ' '
   line:append(' ' .. icons.default.maven .. ' Maven ' .. separator, highlights.SPECIAL_TEXT)
   line:append(
     icons.default.entry .. '' .. icons.default.command .. ' Create',
