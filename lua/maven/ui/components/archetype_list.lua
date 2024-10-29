@@ -168,12 +168,10 @@ function ArchetypeList:_create_input_component()
 end
 
 ---@private On input change handler
----@param _query any
-function ArchetypeList:_on_input_change(_query)
-  local query = string.match(_query, '%s$') and '' or _query -- reset if end on space
-  query = string.match(query, '(%S+)$') or '' -- take the last option to query
+---@param query any
+function ArchetypeList:_on_input_change(query)
+  local _query = string.gsub(query, '%W', '%%%1')
   vim.schedule(function()
-    query = string.gsub(query, '%W', '%%%1')
     local filtered_nodes = vim.tbl_filter(function(node)
       return _query == '' or string.match(node.text, _query)
     end, self._options_nodes)
