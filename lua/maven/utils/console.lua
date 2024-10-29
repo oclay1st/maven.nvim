@@ -67,12 +67,8 @@ local function enqueue_job(job, callback)
   end
 end
 
-local function dequeue_job(job)
-  for index, value in ipairs(_jobs) do
-    if value.pid == job.pid then
-      _jobs[index] = nil
-    end
-  end
+local function dequeue_job()
+  table.remove(_jobs, 1)
 end
 
 ---Execute maven command
@@ -108,9 +104,9 @@ function M.execute_command(command, args, show_output, callback)
         callback(Utils.STARTED_STATE)
       end
     end,
-    on_exit = function(job)
+    on_exit = function()
       if show_output then
-        dequeue_job(job)
+        dequeue_job()
       end
     end,
   })
