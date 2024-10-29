@@ -258,6 +258,7 @@ function InitializerView:_create_project()
   ---@type Path
   local directory = Path:new(self._directory)
   directory:mkdir()
+  local project_directory = Path:new(directory, self._project_name)
   local _callback = function(state)
     vim.schedule(function()
       if state == Utils.SUCCEED_STATE then
@@ -266,7 +267,7 @@ function InitializerView:_create_project()
           '&Yes\n&No'
         )
         if choice == 1 then
-          vim.api.nvim_set_current_dir(directory:absolute())
+          vim.api.nvim_set_current_dir(project_directory:absolute())
           require('maven').refresh()
         end
       elseif state == Utils.FAILED_STATE then
