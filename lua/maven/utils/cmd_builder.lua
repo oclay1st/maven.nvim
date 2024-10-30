@@ -22,8 +22,7 @@ CommandBuilder.build_mvn_cmd = function(pom_xml_path, extra_args)
   local _args = {
     '-B',
     '-N',
-    '-f',
-    normalize(pom_xml_path),
+    '--file=' .. normalize(pom_xml_path),
   }
   for _, value in ipairs(extra_args) do
     table.insert(_args, value)
@@ -45,8 +44,7 @@ CommandBuilder.build_mvn_dependencies_cmd = function(pom_xml_path, output_dir, o
     args = {
       '-B',
       '-N',
-      '-f',
-      normalize(pom_xml_path),
+      '--file=' .. normalize(pom_xml_path),
       'com.github.ferstl:depgraph-maven-plugin:4.0.2:graph',
       '-DgraphFormat=text',
       '-DshowVersions=true',
@@ -69,8 +67,7 @@ CommandBuilder.build_mvn_effective_pom_cmd = function(pom_xml_path, output_file)
     args = {
       '-B',
       '-N',
-      '-f',
-      normalize(pom_xml_path),
+      '--file=' .. normalize(pom_xml_path),
       'help:effective-pom',
       '-Doutput=' .. output_file,
     },

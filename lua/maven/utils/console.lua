@@ -76,13 +76,15 @@ end
 ---@param args string[]
 ---@param show_output boolean
 ---@param callback? fun(state: string, ...)
-function M.execute_command(command, args, show_output, callback)
+---@param cwd? string
+function M.execute_command(command, args, show_output, callback, cwd)
   if show_output then
     setup_buffer()
   end
   local job = Job:new({
     command = command,
     args = args,
+    cwd = cwd,
     on_stdout = function(_, data)
       if show_output and _buf then
         append(data, _buf, _win)

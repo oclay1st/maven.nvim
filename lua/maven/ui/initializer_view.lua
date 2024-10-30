@@ -249,9 +249,11 @@ function InitializerView:_create_directory_component()
       return
     end
     self._directory = current_node.path
-    self:_create_project()
-    self:_quit_all(true)
-    vim.api.nvim_set_current_win(self._prev_win)
+    local _created = self:_create_project()
+    if _created then
+      self:_quit_all(true)
+      vim.api.nvim_set_current_win(self._prev_win)
+    end
   end)
   self._directory_component:map('n', '<bs>', function()
     self._directory_component:hide()
@@ -261,9 +263,12 @@ end
 
 function InitializerView:_create_project()
   ---@type Path
-  local directory = Path:new(self._directory)
-  directory:mkdir()
-  local project_directory = Path:new(directory, self._project_name)
+  local project_directory = Path:new(self._directory, self._project_name)
+  if project_directory:exists() then
+    vim.notify('Directory already exists', vim.log.levels.ERROR)
+    return false
+  end
+  project_directory:mkdir()
   local _callback = function(state)
     vim.schedule(function()
       if state == Utils.SUCCEED_STATE then
@@ -290,7 +295,14 @@ function InitializerView:_create_project()
     self._directory
   )
   local show_output = MavenConfig.options.console.show_create_project_execution
-  Console.execute_command(command.cmd, command.args, show_output, _callback)
+  Console.execute_command(
+    command.cmd,
+    command.args,
+    show_output,
+    _callback,
+    project_directory:absolute()
+  )
+  return true
 end
 
 ---@private Quit all
