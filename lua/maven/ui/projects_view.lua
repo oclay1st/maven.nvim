@@ -90,7 +90,7 @@ end
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_command_node(node, project)
-  local command = CommandBuilder.build_mvn_cmd(project.root_path, node.cmd_args)
+  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, node.cmd_args)
   local show_output = MavenConfig.options.console.show_command_execution
   Console.execute_command(command.cmd, command.args, show_output, function(state)
     vim.schedule(function()
