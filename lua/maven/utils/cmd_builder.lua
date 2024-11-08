@@ -124,6 +124,7 @@ CommandBuilder.create_project = function(
       '-DarchetypeArtifactId=' .. archetype_artifact_id,
       '-DarchetypeVersion=' .. archetype_version,
       '-DoutputDirectory=' .. directory,
+      '-DarchetypeCatalog=local',
       '-DinteractiveMode=false',
     },
   }

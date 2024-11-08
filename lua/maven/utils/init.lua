@@ -23,9 +23,14 @@ M.maven_plugin_xml_path = 'META-INF/maven/plugin.xml'
 
 M.archetypes_catalog_url = 'https://repo.maven.apache.org/maven2/archetype-catalog.xml'
 
-M.archetypes_json_path = M.maven_data_path .. Path.path.sep .. 'archetypes.json'
+---@type Path
+M.archetypes_json_path = Path:new(M.maven_data_path, 'archetypes.json')
 
-M.archetypes_local_catalog_path =
+---@type Path
+M.local_catalog_path = Path:new(M.maven_local_repository_path, 'archetype-catalog.xml')
+
+---@type Path
+M.local_central_catalog_path =
   Path:new(M.maven_local_repository_path, 'archetype-catalog-central.xml')
 
 M.get_plugin_root_dir = function()

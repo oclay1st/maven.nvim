@@ -51,12 +51,11 @@ end
 
 ---Load the maven projects given a directory
 ---@param base_path string
----@return Project[]
-M.scan_projects = function(base_path)
+M.scan_projects = function(base_path, callback)
   scanned_pom_list = {}
   custom_commands = create_custom_commands()
   local projects = {}
-  scan.scan_dir(base_path, {
+  scan.scan_dir_async(base_path, {
     search_pattern = pom_xml_file_pattern,
     depth = 10,
     on_insert = function(pom_xml_path, _)
@@ -66,8 +65,10 @@ M.scan_projects = function(base_path)
         table.insert(scanned_pom_list, pom_xml_path)
       end
     end,
+    on_exit = function()
+      callback(projects)
+    end,
   })
-  return projects
 end
 
 M.load_project_dependencies = function(pom_xml_path, callback)
@@ -143,25 +144,28 @@ M.load_help_options = function(callback)
 end
 
 M.load_archetype_catalog = function(callback)
-  ---@type Path
-  local archetypes_path = Path:new(Utils.archetypes_json_path)
-  local local_catalog_path = Path:new(Utils.archetypes_local_catalog_path)
-  if archetypes_path:exists() then
-    local archetypes = ArchetypeJsonParser:parse_file(archetypes_path:absolute())
+  if Utils.archetypes_json_path:exists() then
+    local archetypes = ArchetypeJsonParser:parse_file(Utils.archetypes_json_path:absolute())
     callback(archetypes)
-  elseif local_catalog_path:exists() then
-    local archetypes = ArchetypeCatalogParser.parse_file(local_catalog_path:absolute())
+  elseif Utils.local_catalog_path:exists() then
+    local catalog_path = Utils.local_catalog_path:absolute()
+    local archetypes = ArchetypeCatalogParser.parse_file(catalog_path)
     callback(archetypes)
-    ArchetypeJsonParser:export(archetypes, archetypes_path:absolute())
+    ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path:absolute())
+  elseif Utils.local_central_catalog_path:exists() then
+    local catalog_path = Utils.local_central_catalog_path:absolute()
+    local archetypes = ArchetypeCatalogParser.parse_file(catalog_path)
+    callback(archetypes)
+    ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path:absolute())
   else
-    local catalog_path = os.tmpname()
+    local catalog_path = Utils.local_catalog_path:absolute()
     curl.get(Utils.archetypes_catalog_url, {
       output = catalog_path,
       callback = function()
         vim.schedule(function()
           local archetypes = ArchetypeCatalogParser.parse_file(catalog_path)
           callback(archetypes)
-          ArchetypeJsonParser:export(archetypes, archetypes_path:absolute())
+          ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path:absolute())
         end)
       end,
       on_error = function(message)
