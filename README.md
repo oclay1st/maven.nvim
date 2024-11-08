@@ -73,7 +73,7 @@ This plugin is under **Development**.
     show_plugin_goal_execution = true,
     show_dependencies_load_execution = false,
     show_plugins_load_execution = false,
-    show_create_project_execution = false,
+    show_project_create_execution = false,
   },
   mvn_executable = 'mvn',
   custom_commands = {

@@ -296,7 +296,7 @@ function InitializerView:_create_project()
     self._archetype_version,
     self._directory
   )
-  local show_output = MavenConfig.options.console.show_create_project_execution
+  local show_output = MavenConfig.options.console.show_project_create_execution
   Console.execute_command(
     command.cmd,
     command.args,
