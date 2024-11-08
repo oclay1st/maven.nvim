@@ -550,6 +550,7 @@ end
 ---Unmount the view
 function ProjectView:unmount()
   self._win:unmount()
+  self._is_visible = false
 end
 
 ---Set project loading
