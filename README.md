@@ -84,5 +84,6 @@ This plugin is under **Development**.
     --   description = "clean package and skip tests",
     -- }
   }, 
+  project_scanner_depth = 5
 }
 ```

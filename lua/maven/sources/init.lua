@@ -57,7 +57,7 @@ M.scan_projects = function(base_path, callback)
   local projects = {}
   scan.scan_dir_async(base_path, {
     search_pattern = pom_xml_file_pattern,
-    depth = 10,
+    depth = MavenConfig.options.project_scanner_depth,
     on_insert = function(pom_xml_path, _)
       if not vim.tbl_contains(scanned_pom_list, pom_xml_path) then
         local project = M.create_project_from_pom(pom_xml_path)

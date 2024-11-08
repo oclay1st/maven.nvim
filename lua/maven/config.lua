@@ -33,6 +33,7 @@ M.namespace = vim.api.nvim_create_namespace('maven')
 ---@field console ConsoleView
 ---@field mvn_executable string the name or path of mvn
 ---@field custom_commands CustomCommand[]
+---@field project_scanner_depth number
 local defaultOptions = {
   projects_view = {
     position = 'right',
@@ -55,6 +56,7 @@ local defaultOptions = {
   },
   mvn_executable = 'mvn',
   custom_commands = {},
+  project_scanner_depth = 5,
 }
 
 ---@type MavenOptions
