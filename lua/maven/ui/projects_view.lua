@@ -61,11 +61,11 @@ local ProjectView = {}
 ProjectView.__index = ProjectView
 
 ---Create a new ProjectView
----@param projects Project[]
+---@param projects? Project[]
 ---@return ProjectView
 function ProjectView.new(projects)
   return setmetatable({
-    projects = projects,
+    projects = projects or {},
   }, ProjectView)
 end
 
@@ -322,7 +322,7 @@ function ProjectView:_create_project_node(project)
 end
 
 ---@private Create  the tree component
-function ProjectView:_create_tree()
+function ProjectView:_render_projects_tree()
   self._tree = NuiTree({
     ns_id = MavenConfig.namespace,
     bufnr = self._win.bufnr,
@@ -353,7 +353,11 @@ function ProjectView:_create_tree()
       return line
     end,
   })
+  self:_render_tree_nodes()
+end
 
+---@private Render project tree
+function ProjectView:_render_tree_nodes()
   local nodes = {}
   for index, project in ipairs(self.projects) do
     nodes[index] = self:_create_project_node(project)
@@ -366,7 +370,7 @@ function ProjectView:_create_tree()
 end
 
 ---@private Create the header line
-function ProjectView:_create_menu_header_line()
+function ProjectView:_render_menu_header_line()
   local line = NuiLine()
   local separator = ' '
   line:append(' ' .. icons.default.maven .. ' Maven ' .. separator, highlights.SPECIAL_TEXT)
@@ -392,14 +396,27 @@ function ProjectView:_create_menu_header_line()
 end
 
 ---@private Create the projects header line
-function ProjectView:_create_projects_header_line()
-  self._projects_header_line = NuiLine()
-  local project_text = ' Projects:'
-  if #self.projects == 0 then
-    project_text = project_text .. ' (create a new project) '
-  end
-  self._projects_header_line:append(project_text, highlights.DIM_TEXT)
+function ProjectView:_render_projects_header_line(line)
+  self._projects_header_line = line
   self._projects_header_line:render(self._win.bufnr, MavenConfig.namespace, 2)
+end
+
+---@private Create the projects header line
+function ProjectView:_create_projects_line()
+  local line = NuiLine()
+  line:append(' Projects:', highlights.DIM_TEXT)
+  if #self.projects == 0 then
+    line:append(' (Projects not found, create a new one!) ', highlights.DIM_TEXT)
+  end
+  return line
+end
+
+---@private Create the projects scanning line
+function ProjectView:_create_projects_scanning_line()
+  local line = NuiLine()
+  line:append(' Projects:', highlights.DIM_TEXT)
+  line:append(' ...scanning directory ', highlights.DIM_TEXT)
+  return line
 end
 
 ---@private Setup key maps
@@ -472,7 +489,7 @@ function ProjectView:_setup_win_maps()
 end
 
 ---@private Create win component
-function ProjectView:_create_win()
+function ProjectView:_render_win()
   self._win = NuiSplit({
     ns_id = MavenConfig.namespace,
     relative = 'editor',
@@ -493,20 +510,21 @@ function ProjectView:_create_win()
       list = false,
     },
   })
+  self._win:mount()
+  self._is_visible = true
 end
 
 ---Mount the explorer component
 function ProjectView:mount()
   ---Mount the component
-  self:_create_win()
-  self._win:mount()
-  self._is_visible = true
+  self:_render_win()
   ---Create the header  line
-  self:_create_menu_header_line()
+  self:_render_menu_header_line()
   ---Create the Projects line
-  self:_create_projects_header_line()
+  local _line = self:_create_projects_line()
+  self:_render_projects_header_line(_line)
   ---Create the tree
-  self:_create_tree()
+  self:_render_projects_tree()
   ---Setup maps
   self:_setup_win_maps()
 end
@@ -529,8 +547,32 @@ function ProjectView:toggle()
   end
 end
 
+---Unmount the view
 function ProjectView:unmount()
   self._win:unmount()
+end
+
+---Set project loading
+---@param value boolean
+function ProjectView:set_loading(value)
+  local line
+  if value then
+    line = self:_create_projects_scanning_line()
+  else
+    line = self:_create_projects_line()
+  end
+  vim.api.nvim_set_option_value('modifiable', true, { buf = self._win.bufnr })
+  vim.api.nvim_set_option_value('readonly', false, { buf = self._win.bufnr })
+  self:_render_projects_header_line(line)
+  vim.api.nvim_set_option_value('modifiable', false, { buf = self._win.bufnr })
+  vim.api.nvim_set_option_value('readonly', true, { buf = self._win.bufnr })
+end
+
+---Refresh projects
+---@param projects Project[]
+function ProjectView:refresh_projects(projects)
+  self.projects = projects
+  self:_render_tree_nodes()
 end
 
 return ProjectView
