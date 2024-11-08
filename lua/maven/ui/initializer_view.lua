@@ -252,7 +252,9 @@ function InitializerView:_create_directory_component()
     local _created = self:_create_project()
     if _created then
       self:_quit_all(true)
-      vim.api.nvim_set_current_win(self._prev_win)
+      if vim.api.nvim_win_is_valid(self._prev_win) then
+        vim.api.nvim_set_current_win(self._prev_win)
+      end
     end
   end)
   self._directory_component:map('n', '<bs>', function()
