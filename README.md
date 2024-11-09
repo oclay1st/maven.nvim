@@ -25,10 +25,9 @@ This plugin is under **Development**.
 
 ## ⚡️ Requirements
 
--  Luarocks (install Lua headers)
 -  For Unix systems:
    - `unzip`
--  For Windows systems:
+-  For Windows systems(untested):
    - `GNU tar`
 
 ## 📦 Installation
@@ -42,7 +41,6 @@ This plugin is under **Development**.
    dependencies = {
       "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
-      { "oclay1st/xml2lua", build = "rockspec" },
    },
    config = function()
      require("maven").setup({

@@ -1,5 +1,6 @@
-local xml2lua = require('xml2lua')
-local handler = require('xmlhandler.tree')
+local Path = require('plenary.path')
+local XmlParser = require('maven.vendor.xml2lua.XmlParser')
+local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
 
 ---@class EffectivePomPlugin
 ---@field group_id string
@@ -42,8 +43,8 @@ end
 ---Parse the epom xml content
 ---@return EffectivePom
 function EffectivePomParser.parse(epom_xml_content)
-  local xml_handler = handler:new()
-  local xml_parser = xml2lua.parser(xml_handler)
+  local xml_handler = TreeHandler:new()
+  local xml_parser = XmlParser.new(xml_handler, {})
   xml_parser:parse(epom_xml_content)
   local _xml = xml_handler.root
   assert(_xml.project, 'Tag <plugin> not found on epom file')
@@ -57,8 +58,8 @@ end
 
 ---Parse the epom xml file
 function EffectivePomParser.parse_file(epom_xml_path)
-  local content = xml2lua.loadFile(epom_xml_path)
-  return EffectivePomParser.parse(content)
+  local _xml_content = Path:new(epom_xml_path):read()
+  return EffectivePomParser.parse(_xml_content)
 end
 
 return EffectivePomParser

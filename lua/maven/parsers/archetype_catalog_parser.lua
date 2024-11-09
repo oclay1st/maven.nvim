@@ -1,5 +1,6 @@
-local xml2lua = require('xml2lua')
-local handler = require('xmlhandler.tree')
+local Path = require('plenary.path')
+local XmlParser = require('maven.vendor.xml2lua.XmlParser')
+local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
 local Archetype = require('maven.sources.archetype')
 
 ---@class ArchetypeCatalogParser
@@ -20,8 +21,8 @@ end
 ---@return Archetype[]
 function ArchetypeCatalogParser.parse(catalog_xml_content)
   local archetypes = {} ---@type Archetype[]
-  local xml_handler = handler:new()
-  local xml_parser = xml2lua.parser(xml_handler)
+  local xml_handler = TreeHandler:new()
+  local xml_parser = XmlParser.new(xml_handler, {})
   xml_parser:parse(catalog_xml_content)
   local _xml = xml_handler.root
   local data = _xml['archetype-catalog'].archetypes.archetype
@@ -39,8 +40,8 @@ end
 
 ---Parse the catalog xml file
 function ArchetypeCatalogParser.parse_file(catalog_xml_path)
-  local content = xml2lua.loadFile(catalog_xml_path)
-  return ArchetypeCatalogParser.parse(content)
+  local _xml_content = Path:new(catalog_xml_path):read()
+  return ArchetypeCatalogParser.parse(_xml_content)
 end
 
 return ArchetypeCatalogParser

@@ -8,6 +8,5 @@ require('lazy.minit').busted({
   spec = {
     'MunifTanjim/nui.nvim',
     'nvim-lua/plenary.nvim',
-    { 'oclay1st/xml2lua', build = 'rockspec' },
   },
 })

@@ -1,6 +1,7 @@
+local Path = require('plenary.path')
 local Project = require('maven.sources.project')
-local xml2lua = require('xml2lua')
-local handler = require('xmlhandler.tree')
+local XmlParser = require('maven.vendor.xml2lua.XmlParser')
+local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
 
 ---@class PluginParser
 local PluginParser = {}
@@ -26,8 +27,8 @@ end
 ---@param plugin_xml_content string
 ---@return Project.Plugin
 function PluginParser.parse(plugin_xml_content)
-  local xml_handler = handler:new()
-  local xml_parser = xml2lua.parser(xml_handler)
+  local xml_handler = TreeHandler:new()
+  local xml_parser = XmlParser.new(xml_handler, {})
   xml_parser:parse(plugin_xml_content)
   local _xml = xml_handler.root
   assert(_xml.plugin, 'Tag <plugin> not found on plugin file')
@@ -43,8 +44,8 @@ end
 ---@param plugin_xml_path string
 ---@return Project.Plugin
 function PluginParser.parse_file(plugin_xml_path)
-  local xml_content = xml2lua.loadFile(plugin_xml_path)
-  return PluginParser.parse(xml_content)
+  local _xml_content = Path:new(plugin_xml_path):read()
+  return PluginParser.parse(_xml_content)
 end
 
 return PluginParser

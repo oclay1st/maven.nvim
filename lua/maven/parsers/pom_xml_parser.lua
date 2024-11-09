@@ -1,5 +1,6 @@
-local xml2lua = require('xml2lua')
-local handler = require('xmlhandler.tree')
+local Path = require('plenary.path')
+local XmlParser = require('maven.vendor.xml2lua.XmlParser')
+local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
 
 ---@class Pom
 ---@field group_id? string
@@ -29,8 +30,8 @@ end
 ---Parse the pom xml content
 ---@return Pom
 function PomParser.parse(pom_xml_content)
-  local xml_handler = handler:new()
-  local xml_parser = xml2lua.parser(xml_handler)
+  local xml_handler = TreeHandler:new()
+  local xml_parser = XmlParser.new(xml_handler, {})
   xml_parser:parse(pom_xml_content)
   local _xml = xml_handler.root
   assert(_xml.project, 'Tag <project> not found on pom file')
@@ -46,8 +47,8 @@ end
 ---Parse the pom xml file
 ---@return Pom
 function PomParser.parse_file(pom_xml_path)
-  local content = xml2lua.loadFile(pom_xml_path)
-  return PomParser.parse(content)
+  local _xml_content = Path:new(pom_xml_path):read()
+  return PomParser.parse(_xml_content)
 end
 
 return PomParser
