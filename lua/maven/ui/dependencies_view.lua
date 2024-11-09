@@ -6,7 +6,7 @@ local Input = require('nui.input')
 local Text = require('nui.text')
 local Layout = require('nui.layout')
 local event = require('nui.utils.autocmd').event
-local highlights = require('maven.highlights')
+local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
 local icons = require('maven.ui.icons')
 

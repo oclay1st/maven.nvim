@@ -76,10 +76,12 @@ M.load_project_dependencies = function(pom_xml_path, callback)
   local output_filename = Utils.uuid() .. '.txt'
   local _callback = function(state)
     local dependencies
-    if Utils.SUCCEED_STATE == state then
+    if state == Utils.SUCCEED_STATE then
       local file_path = Path:new(output_dir, output_filename)
       dependencies = DependencyTreeParser.parse_file(file_path:absolute())
       file_path:rm()
+    elseif state == Utils.FAILED_STATE then
+      vim.notify('Error loading dependencies', vim.log.levels.ERROR)
     end
     callback(state, dependencies)
   end
@@ -96,12 +98,14 @@ M.load_project_plugins = function(pom_xml_path, callback)
   local absolute_file_path = file_path:absolute()
   local _callback = function(state)
     local plugins
-    if Utils.SUCCEED_STATE == state then
+    if state == Utils.SUCCEED_STATE then
       local epom = EffectivePomParser.parse_file(absolute_file_path)
       file_path:rm()
       plugins = vim.tbl_map(function(item)
         return Project.Plugin(item.group_id, item.artifact_id, item.version)
       end, epom.plugins)
+    elseif state == Utils.FAILED_STATE then
+      vim.notify('Error loading plugins', vim.log.levels.ERROR)
     end
     callback(state, plugins)
   end
@@ -113,9 +117,11 @@ end
 M.load_project_plugin_details = function(group_id, artifact_id, version, callback)
   local _callback = function(state, job)
     local plugin
-    if Utils.SUCCEED_STATE == state then
+    if state == Utils.SUCCEED_STATE then
       local xml_content = table.concat(job:result(), ' ')
       plugin = PluginXmlParser.parse(xml_content)
+    elseif state == Utils.FAILED_STATE then
+      vim.notify('Error loading plugin details', vim.log.levels.ERROR)
     end
     callback(state, plugin)
   end
@@ -133,7 +139,7 @@ end
 M.load_help_options = function(callback)
   local _callback = function(state, job)
     local help_options
-    if Utils.SUCCEED_STATE == state then
+    if state == Utils.SUCCEED_STATE then
       local output_lines = job:result()
       help_options = HelpOptionsParser.parse(output_lines)
     end

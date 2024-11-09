@@ -1,4 +1,4 @@
-local highlights = require('maven.highlights')
+local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
 local Sources = require('maven.sources')
 local ProjectView = require('maven.ui.projects_view')

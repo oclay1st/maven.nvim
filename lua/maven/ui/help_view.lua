@@ -1,7 +1,7 @@
 local NuiPopup = require('nui.popup')
 local NuiLine = require('nui.line')
 local event = require('nui.utils.autocmd').event
-local highlights = require('maven.highlights')
+local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
 local M = {}
 

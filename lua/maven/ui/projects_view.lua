@@ -8,7 +8,7 @@ local Utils = require('maven.utils')
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Console = require('maven.utils.console')
 local MavenConfig = require('maven.config')
-local highlights = require('maven.highlights')
+local highlights = require('maven.config.highlights')
 local icons = require('maven.ui.icons')
 
 local node_type_props = {
@@ -135,7 +135,7 @@ end
 function ProjectView:_load_dependencies_nodes(node, project, on_success)
   Sources.load_project_dependencies(project.pom_xml_path, function(state, dependencies)
     vim.schedule(function()
-      if Utils.SUCCEED_STATE == state then
+      if state == Utils.SUCCEED_STATE then
         project:set_dependencies(dependencies)
         for _, dependency in ipairs(dependencies) do
           local dependency_node = NuiTree.Node({
@@ -167,7 +167,7 @@ end
 function ProjectView:_load_plugins_nodes(node, project)
   Sources.load_project_plugins(project.pom_xml_path, function(state, plugins)
     vim.schedule(function()
-      if Utils.SUCCEED_STATE == state then
+      if state == Utils.SUCCEED_STATE then
         project:set_plugins(plugins)
         local plugin_nodes = {}
         for _, plugin in ipairs(project.plugins) do
@@ -204,7 +204,7 @@ function ProjectView:_load_plugin_nodes(node, project)
     node.version,
     function(state, plugin)
       vim.schedule(function()
-        if Utils.SUCCEED_STATE == state then
+        if state == Utils.SUCCEED_STATE then
           project:replace_plugin(plugin)
           local goal_nodes = {}
           for _, goal in ipairs(plugin.goals) do
