@@ -19,6 +19,7 @@ M.namespace = vim.api.nvim_create_namespace('maven')
 ---@field show_dependencies_load_execution boolean
 ---@field show_plugins_load_execution boolean
 ---@field show_project_create_execution boolean
+---@field clean_before_execution boolean
 
 ---@class InitializerView
 ---@field default_package string
@@ -53,6 +54,7 @@ local defaultOptions = {
     show_dependencies_load_execution = false,
     show_plugins_load_execution = false,
     show_project_create_execution = true,
+    clean_before_execution = true,
   },
   mvn_executable = 'mvn',
   custom_commands = {},
