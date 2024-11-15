@@ -74,6 +74,7 @@ end
 M.load_project_dependencies = function(pom_xml_path, callback)
   local output_dir = Utils.maven_data_path
   local output_filename = Utils.uuid() .. '.txt'
+  local show_output = MavenConfig.options.console.show_dependencies_load_execution
   local _callback = function(state)
     local dependencies
     if state == Utils.SUCCEED_STATE then
@@ -81,13 +82,16 @@ M.load_project_dependencies = function(pom_xml_path, callback)
       dependencies = DependencyTreeParser.parse_file(file_path:absolute())
       file_path:rm()
     elseif state == Utils.FAILED_STATE then
-      vim.notify('Error loading dependencies', vim.log.levels.ERROR)
+      local error_msg = 'Error loading dependencies. '
+      if not show_output then
+        error_msg = error_msg .. 'Enable the console output for more details.'
+      end
+      vim.notify(error_msg, vim.log.levels.ERROR)
     end
     callback(state, dependencies)
   end
   local command =
     CommandBuilder.build_mvn_dependencies_cmd(pom_xml_path, output_dir, output_filename)
-  local show_output = MavenConfig.options.console.show_dependencies_load_execution
   console.execute_command(command.cmd, command.args, show_output, _callback)
 end
 
@@ -96,6 +100,7 @@ M.load_project_plugins = function(pom_xml_path, callback)
   local output_filename = Utils.uuid() .. '.epom'
   local file_path = Path:new(output_dir, output_filename)
   local absolute_file_path = file_path:absolute()
+  local show_output = MavenConfig.options.console.show_plugins_load_execution
   local _callback = function(state)
     local plugins
     if state == Utils.SUCCEED_STATE then
@@ -105,12 +110,15 @@ M.load_project_plugins = function(pom_xml_path, callback)
         return Project.Plugin(item.group_id, item.artifact_id, item.version)
       end, epom.plugins)
     elseif state == Utils.FAILED_STATE then
-      vim.notify('Error loading plugins', vim.log.levels.ERROR)
+      local error_msg = 'Error loading plugins. '
+      if not show_output then
+        error_msg = error_msg .. 'Enable the console output for more details.'
+      end
+      vim.notify(error_msg, vim.log.levels.ERROR)
     end
     callback(state, plugins)
   end
   local command = CommandBuilder.build_mvn_effective_pom_cmd(pom_xml_path, absolute_file_path)
-  local show_output = MavenConfig.options.console.show_plugins_load_execution
   console.execute_command(command.cmd, command.args, show_output, _callback)
 end
 
@@ -121,7 +129,7 @@ M.load_project_plugin_details = function(group_id, artifact_id, version, callbac
       local xml_content = table.concat(job:result(), ' ')
       plugin = PluginXmlParser.parse(xml_content)
     elseif state == Utils.FAILED_STATE then
-      vim.notify('Error loading plugin details', vim.log.levels.ERROR)
+      vim.notify('Error loading plugin details.', vim.log.levels.ERROR)
     end
     callback(state, plugin)
   end
@@ -142,6 +150,8 @@ M.load_help_options = function(callback)
     if state == Utils.SUCCEED_STATE then
       local output_lines = job:result()
       help_options = HelpOptionsParser.parse(output_lines)
+    elseif state == Utils.FAILED_STATE then
+      vim.notify('Error loading help options.', vim.log.levels.ERROR)
     end
     callback(state, help_options)
   end
