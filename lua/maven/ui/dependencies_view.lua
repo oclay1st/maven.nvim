@@ -8,7 +8,6 @@ local Layout = require('nui.layout')
 local event = require('nui.utils.autocmd').event
 local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
-local icons = require('maven.ui.icons')
 
 ---@class DependenciesView
 ---@field private _dependencies_win NuiPopup
@@ -159,7 +158,8 @@ function DependenciesView:_create_dependencies_tree()
     prepare_node = function(node)
       local line = NuiLine()
       line:append(' ')
-      local icon = node.has_conflict and icons.default.warning or icons.default.package
+      local icon = node.has_conflict and MavenConfig.options.icons.warning
+        or MavenConfig.options.icons.package
       local icon_highlight = node.has_conflict and 'DiagnosticWarn' or 'SpecialChar'
       line:append(icon .. ' ', icon_highlight)
       line:append(node.text)
@@ -236,11 +236,11 @@ function DependenciesView:_create_dependency_usages_tree()
       else
         line:append('  ')
       end
-      local icon = icons.default.package
+      local icon = MavenConfig.options.icons.package
       local icon_highlight = 'SpecialChar'
       if node.has_conflict and not node:has_children() then
         icon_highlight = 'DiagnosticWarn'
-        icon = icons.default.warning
+        icon = MavenConfig.options.icons.warning
       end
       line:append(icon .. ' ', icon_highlight)
       if node.is_duplicate and not node:has_children() then
@@ -301,7 +301,7 @@ function DependenciesView:_create_dependency_filter()
       },
     },
   }, {
-    prompt = NuiText(icons.default.search .. '  ', 'SpecialChar'),
+    prompt = NuiText(MavenConfig.options.icons.search .. '  ', 'SpecialChar'),
     on_change = function(value)
       self:_on_filter_change(value, dependencies_nodes)
     end,

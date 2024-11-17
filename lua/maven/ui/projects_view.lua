@@ -9,44 +9,43 @@ local CommandBuilder = require('maven.utils.cmd_builder')
 local Console = require('maven.utils.console')
 local MavenConfig = require('maven.config')
 local highlights = require('maven.config.highlights')
-local icons = require('maven.ui.icons')
 
 local node_type_props = {
   command = {
-    icon = icons.default.command,
+    icon = MavenConfig.options.icons.command,
     started_state_msg = ' ..running ',
     pending_state_msg = ' ..pending ',
   },
-  commands = { icon = icons.default.tool_folder },
+  commands = { icon = MavenConfig.options.icons.tool_folder },
   lifecycle = {
-    icon = icons.default.tool,
+    icon = MavenConfig.options.icons.tool,
     started_state_msg = ' ..running ',
     pending_state_msg = ' ..pending ',
   },
-  lifecycles = { icon = icons.default.tool_folder },
+  lifecycles = { icon = MavenConfig.options.icons.tool_folder },
   plugin_goal = {
-    icon = icons.default.tool,
+    icon = MavenConfig.options.icons.tool,
     started_state_msg = ' ..running ',
     pending_state_msg = ' ..pending ',
   },
-  dependency = { icon = icons.default.package },
+  dependency = { icon = MavenConfig.options.icons.package },
   dependencies = {
-    icon = icons.default.tool_folder,
+    icon = MavenConfig.options.icons.tool_folder,
     started_state_msg = ' ..loading ',
     pending_state_msg = ' ..pending ',
   },
   plugin = {
-    icon = icons.default.plugin,
+    icon = MavenConfig.options.icons.plugin,
     started_state_msg = ' ..loading ',
     pending_state_msg = ' ..pending ',
   },
   plugins = {
-    icon = icons.default.tool_folder,
+    icon = MavenConfig.options.icons.tool_folder,
     started_state_msg = ' ..loading ',
     pending_state_msg = ' ..pending ',
   },
-  modules = { icon = icons.default.tool_folder },
-  project = { icon = icons.default.project },
+  modules = { icon = MavenConfig.options.icons.tool_folder },
+  project = { icon = MavenConfig.options.icons.project },
 }
 
 ---@class ProjectView
@@ -373,23 +372,29 @@ end
 function ProjectView:_render_menu_header_line()
   local line = NuiLine()
   local separator = ' '
-  line:append(' ' .. icons.default.maven .. ' Maven ' .. separator, highlights.SPECIAL_TEXT)
   line:append(
-    icons.default.entry .. '' .. icons.default.command .. ' Create',
+    ' ' .. MavenConfig.options.icons.maven .. ' Maven ' .. separator,
+    highlights.SPECIAL_TEXT
+  )
+  line:append(
+    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.command .. ' Create',
     highlights.SPECIAL_TEXT
   )
   line:append('<c>' .. separator, highlights.NORMAL_TEXT)
   line:append(
-    icons.default.entry .. '' .. icons.default.tree .. ' Analyze',
+    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.tree .. ' Analyze',
     highlights.SPECIAL_TEXT
   )
   line:append('<a>' .. separator, highlights.NORMAL_TEXT)
   line:append(
-    icons.default.entry .. '' .. icons.default.command .. ' Execute',
+    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.command .. ' Execute',
     highlights.SPECIAL_TEXT
   )
   line:append('<e>' .. separator, highlights.NORMAL_TEXT)
-  line:append(icons.default.entry .. '' .. icons.default.help .. ' Help', highlights.SPECIAL_TEXT)
+  line:append(
+    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.help .. ' Help',
+    highlights.SPECIAL_TEXT
+  )
   line:append('<?>' .. separator, highlights.NORMAL_TEXT)
   self._menu_header_line = line
   self._menu_header_line:render(self._win.bufnr, MavenConfig.namespace, 1)

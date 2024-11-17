@@ -4,7 +4,6 @@ local Tree = require('nui.tree')
 local Line = require('nui.line')
 local Text = require('nui.text')
 local Popup = require('nui.popup')
-local icons = require('maven.ui.icons')
 local Sources = require('maven.sources')
 local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
@@ -49,7 +48,7 @@ function ExecuteView.new()
       },
     },
     _prev_win = vim.api.nvim_get_current_win(),
-    _input_prompt = Text(icons.default.command .. '  mvn ', 'SpecialChar'),
+    _input_prompt = Text(MavenConfig.options.icons.command .. '  mvn ', 'SpecialChar'),
   }, ExecuteView)
 end
 
@@ -92,7 +91,7 @@ function ExecuteView:_create_options_tree_list()
         line:append(node.text, highlights.SPECIAL_TEXT)
         return line
       end
-      line:append(icons.default.maven, 'SpecialChar')
+      line:append(MavenConfig.options.icons.maven, 'SpecialChar')
       line:append(' ' .. node.text)
       if node.description then
         line:append(' (' .. node.description .. ')', highlights.DIM_TEXT)
