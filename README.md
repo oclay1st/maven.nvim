@@ -43,15 +43,7 @@ This plugin is under **Development**.
       "MunifTanjim/nui.nvim",
    },
    opts = {}, -- options, see default configuration
-   keys = {
-      {
-        "<Leader>M",
-        function()
-          require("maven").toggle_projects_view()
-        end,
-        desc = "Maven",
-      },
-   }
+   keys = { { "<Leader>M", "<cmd>Maven<cr>", desc = "Maven" } }
 }
 ```
 
