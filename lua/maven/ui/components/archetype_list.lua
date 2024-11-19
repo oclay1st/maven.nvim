@@ -61,10 +61,7 @@ end
 function ArchetypeList:_create_options_component()
   self._options_component = Popup(vim.tbl_deep_extend('force', self._default_opts, {
     win_options = { cursorline = true },
-    border = {
-      style = { '', '', '', '│', '╯', '─', '╰', '│' },
-    },
-  }))
+  }, { border = MavenConfig.options.initializer_view.archetypes_win.options_win.border }))
   self:_create_options_tree()
   self._options_component:map('n', '<enter>', function()
     self:_submit_option()
@@ -140,10 +137,9 @@ function ArchetypeList:_create_input_component()
   self._input_component = Input(
     vim.tbl_deep_extend('force', self._default_opts, {
       border = {
-        style = { '╭', '─', '╮', '│', '│', '─', '│', '│' },
         text = { top = self._options.title, top_align = 'center' },
       },
-    }),
+    }, { border = MavenConfig.options.initializer_view.archetypes_win.input_win.border }),
     {
       prompt = '> ',
       on_change = function(query)

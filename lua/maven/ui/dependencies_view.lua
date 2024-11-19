@@ -47,9 +47,6 @@ function DependenciesView.new(project_name, dependencies)
         spell = false,
         list = false,
       },
-      border = {
-        style = 'rounded',
-      },
     },
     _prev_win = vim.api.nvim_get_current_win(),
     _is_filter_visible = false,
@@ -95,8 +92,10 @@ end
 function DependenciesView:_create_dependencies_win()
   local dependencies_win_opts = vim.tbl_deep_extend('force', self._default_opts, {
     enter = true,
-    border = { text = { top = ' Resolved Dependencies (' .. self.project_name .. ') ' } },
-  })
+    border = {
+      text = { top = ' Resolved Dependencies (' .. self.project_name .. ') ' },
+    },
+  }, { border = MavenConfig.options.dependencies_view.dependency_usages_win.border })
   self._dependencies_win = Popup(dependencies_win_opts)
   self:_create_dependencies_tree()
   local indexed_dependencies = {}
@@ -199,8 +198,10 @@ end
 ---@private Create dependency usages window
 function DependenciesView:_create_dependency_usages_win()
   local dependency_usages_win_opts = vim.tbl_deep_extend('force', self._default_opts, {
-    border = { text = { top = ' Dependency Usages ' } },
-  })
+    border = {
+      text = { top = ' Dependency Usages ' },
+    },
+  }, { border = MavenConfig.options.dependencies_view.dependency_usages_win.border })
   self._dependency_usages_win = Popup(dependency_usages_win_opts)
   self:_create_dependency_usages_tree()
   self._dependency_usages_win:map('n', '<enter>', function()
@@ -293,13 +294,13 @@ function DependenciesView:_create_dependency_filter()
       width = win_width,
     },
     zindex = 60,
-    border = {
+    border = vim.tbl_deep_extend('force', {
       style = 'rounded',
       text = {
         top = 'Filter',
         top_align = 'center',
       },
-    },
+    }, MavenConfig.options.dependencies_view.filter_win.border),
   }, {
     prompt = NuiText(MavenConfig.options.icons.search .. '  ', 'SpecialChar'),
     on_change = function(value)
@@ -325,10 +326,7 @@ function DependenciesView:_create_layout()
       ns_id = MavenConfig.namespace,
       relative = 'editor',
       position = '50%',
-      size = {
-        width = '60%',
-        height = '80%',
-      },
+      size = MavenConfig.options.dependencies_view.size,
     },
     Layout.Box({
       Layout.Box(self._dependencies_win, { size = '50%' }),

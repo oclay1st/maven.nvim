@@ -15,7 +15,7 @@ local help_keys = {
 }
 
 M.mount = function()
-  local popup = NuiPopup({
+  local opts = vim.tbl_deep_extend('force', {
     enter = true,
     ns_id = MavenConfig.namespace,
     relative = 'win',
@@ -31,17 +31,14 @@ M.mount = function()
       wrap = false,
     },
     border = {
-      style = 'rounded',
       text = {
         top = ' Maven Help? ',
         top_align = 'center',
       },
     },
-    size = {
-      width = '80%',
-      height = '20%',
-    },
-  })
+    size = MavenConfig.options.help_view.size,
+  }, { border = MavenConfig.options.help_view.border })
+  local popup = NuiPopup(opts)
 
   popup:mount()
 

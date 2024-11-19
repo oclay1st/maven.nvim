@@ -132,27 +132,18 @@ end
 
 ---@private Create the input component
 function ExecuteView:_create_input_component()
-  self._input_component = Input({
+  local opts = vim.tbl_deep_extend('force', {
     enter = true,
     ns_id = MavenConfig.namespace,
     relative = 'win',
-    position = {
-      row = 1,
-      col = 0,
-    },
-    size = {
-      width = '100%',
-      height = 20,
-    },
+    position = { row = 1, col = 0 },
+    size = { width = '100%', height = 20 },
     zindex = 60,
     border = {
-      style = { '╭', '─', '╮', '│', '│', '─', '│', '│' },
-      text = {
-        top = ' Execute Maven Command ',
-        top_align = 'center',
-      },
+      text = { top = ' Execute Maven Command ', top_align = 'center' },
     },
-  }, {
+  }, { border = MavenConfig.options.execute_view.input_win.border })
+  self._input_component = Input(opts, {
     prompt = self._input_prompt,
     on_submit = function(value)
       local args = {}
@@ -189,10 +180,7 @@ end
 function ExecuteView:_create_options_component()
   self._options_component = Popup(vim.tbl_deep_extend('force', self._default_opts, {
     win_options = { cursorline = true },
-    border = {
-      style = { '', '', '', '│', '╯', '─', '╰', '│' },
-    },
-  }))
+  }, { border = MavenConfig.options.execute_view.options_win.border }))
   self:_create_options_tree_list()
   self._options_component:map('n', '<enter>', function()
     local current_node = self._options_tree:get_node()
@@ -230,10 +218,7 @@ function ExecuteView:_create_layout()
       ns_id = MavenConfig.namespace,
       relative = 'editor',
       position = '50%',
-      size = {
-        width = '40%',
-        height = '60%',
-      },
+      size = MavenConfig.options.execute_view.size,
     },
     Layout.Box({
       Layout.Box(self._input_component, { size = { height = 1, width = '100%' } }),

@@ -51,16 +51,15 @@ This plugin is under **Development**.
 
 ```lua
 {
-  projects_view = {
-    position = 'right',
-    size = 65,
-  },
-  initializer_view = {
-    default_package = '', -- Example: io.github.username
-    workspaces = {
-      { name = "HOME", path = vim.loop.os_homedir() },
-      { name = "CURRENT_DIR", path = vim.fn.getcwd() },
-    },
+  mvn_executable = 'mvn',
+  project_scanner_depth = 5,
+  custom_commands = {
+    -- Example: 
+    -- {
+    --   name = "lazy",
+    --   cmd_args = { "clean", "package", "-DskipTests" },
+    --   description = "clean package and skip tests",
+    -- }
   },
   console = {
     show_command_execution = true,
@@ -68,8 +67,81 @@ This plugin is under **Development**.
     show_plugin_goal_execution = true,
     show_dependencies_load_execution = false,
     show_plugins_load_execution = false,
-    show_project_create_execution = false,
+    show_project_create_execution = true,
     clean_before_execution = true,
+  },
+  projects_view = {
+    position = 'right',
+    size = 65,
+  },
+  dependencies_view = {
+    size = { -- see the nui doc for details about size
+      width = '60%',
+      height = '80%',
+    },
+    resolved_dependencies_win = {
+      border = { style = 'rounded' }, -- see the nui doc for details about border
+    },
+    dependency_usages_win = {
+      border = { style = 'rounded' },
+    },
+    filter_win = {
+      border = { style = 'rounded' },
+    },
+  },
+  initializer_view = {
+    name_win = {
+      border = { style = 'rounded' },
+    },
+    package_win = {
+      default_value = '', -- Example: io.github.username
+      border = { style = 'rounded' },
+    },
+    archetypes_win = {
+      input_win = {
+        border = {
+          style = { '╭', '─', '╮', '│', '│', '─', '│', '│' },
+        },
+      },
+      options_win = {
+        border = {
+          style = { '', '', '', '│', '╯', '─', '╰', '│' },
+        },
+      },
+    },
+    archetype_version_win = {
+      border = { style = 'rounded' },
+    },
+    workspaces_win = {
+      options = {
+        { name = 'HOME', path = vim.loop.os_homedir() },
+        { name = 'CURRENT_DIR', path = vim.fn.getcwd() },
+      },
+      border = { style = 'rounded' },
+    },
+  },
+  execute_view = {
+    size = {
+      width = '40%',
+      height = '60%',
+    },
+    input_win = {
+      border = {
+        style = { '╭', '─', '╮', '│', '│', '─', '│', '│' },
+      },
+    },
+    options_win = {
+      border = {
+        style = { '', '', '', '│', '╯', '─', '╰', '│' },
+      },
+    },
+  },
+  help_view = {
+    size = {
+      width = '80%',
+      height = '20%',
+    },
+    border = { style = 'rounded' },
   },
   icons = {
     plugin = '',
@@ -90,15 +162,5 @@ This plugin is under **Development**.
     entry = ' ',
     search = '',
   },
-  mvn_executable = 'mvn',
-  custom_commands = {
-    -- Example: 
-    -- {
-    --   name = "lazy",
-    --   cmd_args = { "clean", "package", "-DskipTests" },
-    --   description = "clean package and skip tests",
-    -- }
-  }, 
-  project_scanner_depth = 5
 }
 ```

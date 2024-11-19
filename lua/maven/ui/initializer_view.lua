@@ -52,7 +52,6 @@ function InitializerView.new()
       buf_options = buf_options,
       win_options = win_options,
       border = {
-        style = 'rounded',
         text = {
           top_align = 'center',
         },
@@ -67,7 +66,7 @@ function InitializerView:_create_project_name_component()
   self._project_name_component = Input(
     vim.tbl_deep_extend('force', self._default_opts, {
       border = { text = { top = ' Create Maven Project - Name 1/5 ' } },
-    }),
+    }, { border = MavenConfig.options.initializer_view.name_win.border }),
     {
       prompt = '> ',
       on_change = function(value)
@@ -101,9 +100,9 @@ function InitializerView:_create_project_package_component()
   self._project_package_component = Input(
     vim.tbl_deep_extend('force', self._default_opts, {
       border = { text = { top = ' Create Maven Project - Package 2/5 ' } },
-    }),
+    }, { border = MavenConfig.options.initializer_view.package_win.border }),
     {
-      default_value = MavenConfig.options.initializer_view.default_package or '',
+      default_value = MavenConfig.options.initializer_view.package_win.default_value or '',
       prompt = '> ',
       on_change = function(value)
         self._project_package = value
@@ -161,7 +160,7 @@ function InitializerView:_create_archetype_version_component()
     enter = true,
     win_options = { cursorline = true },
     border = { text = { top = ' Create Maven Project - Archetype Version 4/5 ' } },
-  })
+  }, { border = MavenConfig.options.initializer_view.archetype_version_win.border })
   self._archetype_version_component = Popup(opts)
   local options_tree = Tree({
     ns_id = MavenConfig.namespace,
@@ -206,10 +205,10 @@ end
 function InitializerView:_create_directory_component()
   self._directory_component = Popup(vim.tbl_deep_extend('force', self._default_opts, {
     enter = true,
-    size = { height = #MavenConfig.options.initializer_view.workspaces },
+    size = { height = #MavenConfig.options.initializer_view.workspaces_win.options },
     win_options = { cursorline = true },
     border = { text = { top = ' Create Maven Project - Directory 5/5 ' } },
-  }))
+  }, { border = MavenConfig.options.initializer_view.workspaces_win.border }))
   local options_tree = Tree({
     ns_id = MavenConfig.namespace,
     bufnr = self._directory_component.bufnr,
@@ -221,7 +220,7 @@ function InitializerView:_create_directory_component()
     end,
   })
   local nodes = {}
-  for _, workspace in ipairs(MavenConfig.options.initializer_view.workspaces) do
+  for _, workspace in ipairs(MavenConfig.options.initializer_view.workspaces_win.options) do
     local node = Tree.Node({
       text = workspace.name,
       path = workspace.path,
