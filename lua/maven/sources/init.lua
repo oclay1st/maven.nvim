@@ -22,6 +22,19 @@ local scanned_pom_list ---@type string[]
 
 local custom_commands ---@type string[]
 
+---Sort all projects and modules
+---@param projects Project[]
+local function sort_projects_by_name(projects)
+  table.sort(projects, function(a, b)
+    return a.name < b.name
+  end)
+  for _, project in ipairs(projects) do
+    if #project.modules ~= 0 then
+      sort_projects_by_name(project.modules)
+    end
+  end
+end
+
 local create_custom_commands = function()
   local _commands = {}
   for index, custom_command in ipairs(MavenConfig.options.custom_commands) do
@@ -66,6 +79,7 @@ M.scan_projects = function(base_path, callback)
       end
     end,
     on_exit = function()
+      sort_projects_by_name(projects)
       callback(projects)
     end,
   })
