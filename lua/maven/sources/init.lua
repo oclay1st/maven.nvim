@@ -24,13 +24,13 @@ local custom_commands ---@type string[]
 
 ---Sort all projects and modules
 ---@param projects Project[]
-local function sort_projects_by_name(projects)
+local function sort_projects(projects)
   table.sort(projects, function(a, b)
-    return a.name < b.name
+    return string.lower(a.name) < string.lower(b.name)
   end)
   for _, project in ipairs(projects) do
     if #project.modules ~= 0 then
-      sort_projects_by_name(project.modules)
+      sort_projects(project.modules)
     end
   end
 end
@@ -79,7 +79,7 @@ M.scan_projects = function(base_path, callback)
       end
     end,
     on_exit = function()
-      sort_projects_by_name(projects)
+      sort_projects(projects)
       callback(projects)
     end,
   })
