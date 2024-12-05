@@ -220,7 +220,7 @@ Plugin.__index = Plugin
 
 ---@alias Plugin Project.Plugin
 
-local patterns = {
+local plugin_patterns = {
   '%-maven%-plugin',
   '%-maven',
   'maven%-',
@@ -238,7 +238,7 @@ end
 ---@return string
 function Plugin:get_short_name()
   local name = self.artifact_id
-  for _, pattern in ipairs(patterns) do
+  for _, pattern in ipairs(plugin_patterns) do
     name, _ = string.gsub(name, pattern, '')
   end
   return name

@@ -120,9 +120,14 @@ M.load_project_plugins = function(pom_xml_path, callback)
     if state == Utils.SUCCEED_STATE then
       local epom = EffectivePomParser.parse_file(absolute_file_path)
       file_path:rm()
+      -- map to a plugin list
       plugins = vim.tbl_map(function(item)
         return Project.Plugin(item.group_id, item.artifact_id, item.version)
       end, epom.plugins)
+      -- sort the plugin list
+      table.sort(plugins, function(a, b)
+        return string.lower(a:get_short_name()) < string.lower(b:get_short_name())
+      end)
     elseif state == Utils.FAILED_STATE then
       local error_msg = 'Error loading plugins. '
       if not show_output then
