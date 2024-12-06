@@ -48,7 +48,7 @@ function ExecuteView.new()
       },
     },
     _prev_win = vim.api.nvim_get_current_win(),
-    _input_prompt = Text(MavenConfig.options.icons.command .. '  mvn ', 'SpecialChar'),
+    _input_prompt = Text(MavenConfig.options.icons.command .. '  mvn ', highlights.SPECIAL),
   }, ExecuteView)
 end
 
@@ -88,13 +88,13 @@ function ExecuteView:_create_options_tree_list()
       local line = Line()
       line:append(' ')
       if node.type == 'loading' then
-        line:append(node.text, highlights.SPECIAL_TEXT)
+        line:append(node.text, highlights.SPECIAL)
         return line
       end
-      line:append(MavenConfig.options.icons.maven, 'SpecialChar')
+      line:append(MavenConfig.options.icons.maven, highlights.SPECIAL)
       line:append(' ' .. node.text)
       if node.description then
-        line:append(' (' .. node.description .. ')', highlights.DIM_TEXT)
+        line:append(' (' .. node.description .. ')', highlights.COMMENT)
       end
       return line
     end,
@@ -179,7 +179,10 @@ end
 ---@private Create the options component
 function ExecuteView:_create_options_component()
   self._options_component = Popup(vim.tbl_deep_extend('force', self._default_opts, {
-    win_options = { cursorline = true },
+    win_options = {
+      cursorline = true,
+      winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
+    },
   }, { border = MavenConfig.options.execute_view.options_win.border }))
   self:_create_options_tree_list()
   self._options_component:map('n', '<enter>', function()

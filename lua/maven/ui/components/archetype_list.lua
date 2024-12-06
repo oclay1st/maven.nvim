@@ -60,7 +60,10 @@ end
 ---@private Create the options component
 function ArchetypeList:_create_options_component()
   self._options_component = Popup(vim.tbl_deep_extend('force', self._default_opts, {
-    win_options = { cursorline = true },
+    win_options = {
+      cursorline = true,
+      winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
+    },
   }, { border = MavenConfig.options.initializer_view.archetypes_win.options_win.border }))
   self:_create_options_tree()
   self._options_component:map('n', '<enter>', function()
@@ -82,12 +85,12 @@ function ArchetypeList:_create_options_tree()
     prepare_node = function(node)
       local line = Line({ Text(' ') })
       if node.type == 'archetype' then
-        line:append(MavenConfig.options.icons.package, highlights.SPECIAL_TEXT)
+        line:append(MavenConfig.options.icons.package, highlights.SPECIAL)
         line:append(' ' .. node.text)
-        line:append(' (' .. node.item.group_id .. ')', highlights.DIM_TEXT)
+        line:append(' (' .. node.item.group_id .. ')', highlights.COMMENT)
       elseif node.type == 'loading' then
-        line:append(MavenConfig.options.icons.search .. ' ' .. node.text, highlights.SPECIAL_TEXT)
-        line:append('(from Catalog)', highlights.DIM_TEXT)
+        line:append(MavenConfig.options.icons.search .. ' ' .. node.text, highlights.SPECIAL)
+        line:append('(from Catalog)', highlights.COMMENT)
       else
         line:append(' ' .. node.text)
       end

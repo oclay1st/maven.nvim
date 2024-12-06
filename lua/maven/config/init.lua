@@ -45,7 +45,7 @@ local defaultOptions = {
   },
   dependencies_view = {
     size = {
-      width = '60%',
+      width = '70%',
       height = '80%',
     },
     resolved_dependencies_win = {

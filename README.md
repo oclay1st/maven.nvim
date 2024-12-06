@@ -76,7 +76,7 @@ This plugin is under **Development**.
   },
   dependencies_view = {
     size = { -- see the nui doc for details about size
-      width = '60%',
+      width = '70%',
       height = '80%',
     },
     resolved_dependencies_win = {

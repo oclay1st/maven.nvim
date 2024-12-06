@@ -158,7 +158,10 @@ end
 function InitializerView:_create_archetype_version_component()
   local opts = vim.tbl_deep_extend('force', self._default_opts, {
     enter = true,
-    win_options = { cursorline = true },
+    win_options = {
+      cursorline = true,
+      winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
+    },
     border = { text = { top = ' Create Maven Project - Archetype Version 4/5 ' } },
   }, { border = MavenConfig.options.initializer_view.archetype_version_win.border })
   self._archetype_version_component = Popup(opts)
@@ -206,7 +209,10 @@ function InitializerView:_create_directory_component()
   self._directory_component = Popup(vim.tbl_deep_extend('force', self._default_opts, {
     enter = true,
     size = { height = #MavenConfig.options.initializer_view.workspaces_win.options },
-    win_options = { cursorline = true },
+    win_options = {
+      cursorline = true,
+      winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
+    },
     border = { text = { top = ' Create Maven Project - Directory 5/5 ' } },
   }, { border = MavenConfig.options.initializer_view.workspaces_win.border }))
   local options_tree = Tree({
@@ -215,7 +221,7 @@ function InitializerView:_create_directory_component()
     prepare_node = function(node)
       local line = Line()
       line:append(' ' .. node.text)
-      line:append(' ' .. node.project_path, highlights.DIM_TEXT)
+      line:append(' ' .. node.project_path, highlights.COMMENT)
       return line
     end,
   })

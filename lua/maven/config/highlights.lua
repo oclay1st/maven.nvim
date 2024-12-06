@@ -1,33 +1,49 @@
 local M = {}
 
-M.NORMAL_TEXT = 'MavenNormalText'
-M.SPECIAL_TEXT = 'MavenSpecialText'
-M.DIM_TEXT = 'MavenDimText'
-M.SPECIAL_TITLE = 'MavenSpecialTitle'
-M.ERROR_TEXT = 'MavenErrorText'
-
+M.NORMAL = 'MavenNormal'
+M.SPECIAL = 'MavenSpecial'
+M.COMMENT = 'MavenComment'
+M.TITLE = 'MavenTitle'
+M.INFO = 'MavenInfo'
+M.WARN = 'MavenWarn'
+M.ERROR = 'MavenError'
+M.CURSOR_LINE = 'MavenCursorLine'
 local highlights = {
   {
-    name = M.NORMAL_TEXT,
-    config = { default = true, link = 'NonText' },
+    name = M.NORMAL,
+    config = { default = true, link = 'Normal' },
   },
   {
-    name = M.SPECIAL_TEXT,
+    name = M.CURSOR_LINE,
+    config = { default = true, link = 'CursorLine' },
+  },
+  {
+    name = M.SPECIAL,
     config = { default = true, link = 'Special' },
   },
   {
-    name = M.DIM_TEXT,
+    name = M.COMMENT,
     config = { default = true, link = 'Comment' },
   },
   {
-    name = M.SPECIAL_TITLE,
+    name = M.TITLE,
     config = { default = true, link = 'Title' },
   },
   {
-    name = M.ERROR_TEXT,
-    config = { default = true, italic = true, fg = '#c53b53' },
+    name = M.ERROR,
+    config = { default = true, italic = true, link = 'DiagnosticError' },
+  },
+  {
+    name = M.WARN,
+    config = { default = true, italic = true, link = 'DiagnosticWarn' },
+  },
+  {
+    name = M.INFO,
+    config = { default = true, italic = true, link = 'DiagnosticInfo' },
   },
 }
+
+M.DEFAULT_WIN_HIGHLIGHT = 'Normal:MavenNormal,NormalNC:MavenNormalNC,CursorLine:MavenCursorLine'
 
 function M.setup()
   for _, v in ipairs(highlights) do
