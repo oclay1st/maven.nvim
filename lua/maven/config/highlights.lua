@@ -1,17 +1,23 @@
 local M = {}
 
 M.NORMAL = 'MavenNormal'
+M.NORMAL_NC = 'MavenNormalNC'
+M.CURSOR_LINE = 'MavenCursorLine'
 M.SPECIAL = 'MavenSpecial'
 M.COMMENT = 'MavenComment'
 M.TITLE = 'MavenTitle'
 M.INFO = 'MavenInfo'
 M.WARN = 'MavenWarn'
 M.ERROR = 'MavenError'
-M.CURSOR_LINE = 'MavenCursorLine'
+
 local highlights = {
   {
     name = M.NORMAL,
     config = { default = true, link = 'Normal' },
+  },
+  {
+    name = M.NORMAL_NC,
+    config = { default = true, link = 'NormalNC' },
   },
   {
     name = M.CURSOR_LINE,

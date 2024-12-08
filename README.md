@@ -164,3 +164,21 @@ This plugin is under **Development**.
   },
 }
 ```
+
+## 🎨 Highlight Groups
+
+<!-- colors:start -->
+
+| Highlight Group | Default Group | Description |
+| --- | --- | --- |
+| **MavenNormal** | ***Normal*** | Normal text |
+| **MavenNormalNC** | ***NormalNC*** | Normal text on non current window |
+| **MavenCursorLine** | ***CursorLine*** | Cursor line text |
+| **MavenSpecial** | ***Special*** | Special text |
+| **MavenComment** | ***Comment*** | Comment text |
+| **MavenTitle** | ***Title*** | Title text |
+| **MavenError** | ***DiagnosticError*** | Error text |
+| **MavenWarn** | ***DiagnosticWarn*** | Warning text |
+| **MavenInfo** | ***DiagnosticInfo*** | Info text |
+
+<!-- colors:end -->
