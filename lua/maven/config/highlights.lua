@@ -1,7 +1,6 @@
 local M = {}
 
 M.NORMAL = 'MavenNormal'
-M.NORMAL_NC = 'MavenNormalNC'
 M.CURSOR_LINE = 'MavenCursorLine'
 M.SPECIAL = 'MavenSpecial'
 M.COMMENT = 'MavenComment'
@@ -9,6 +8,7 @@ M.TITLE = 'MavenTitle'
 M.INFO = 'MavenInfo'
 M.WARN = 'MavenWarn'
 M.ERROR = 'MavenError'
+M.NORMAL_FLOAT = 'MavenNormalFloat'
 
 local highlights = {
   {
@@ -16,8 +16,8 @@ local highlights = {
     config = { default = true, link = 'Normal' },
   },
   {
-    name = M.NORMAL_NC,
-    config = { default = true, link = 'NormalNC' },
+    name = M.NORMAL_FLOAT,
+    config = { default = true, link = 'NormalFloat' },
   },
   {
     name = M.CURSOR_LINE,
@@ -49,7 +49,8 @@ local highlights = {
   },
 }
 
-M.DEFAULT_WIN_HIGHLIGHT = 'Normal:MavenNormal,NormalNC:MavenNormalNC,CursorLine:MavenCursorLine'
+M.DEFAULT_WIN_HIGHLIGHT =
+  'Normal:MavenNormal,NormalFloat:MavenNormalFloat,CursorLine:MavenCursorLine'
 
 function M.setup()
   for _, v in ipairs(highlights) do
