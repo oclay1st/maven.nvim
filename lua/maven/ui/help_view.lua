@@ -6,16 +6,16 @@ local MavenConfig = require('maven.config')
 local M = {}
 
 local help_keys = {
-  { key = 'c', desc = 'Create a new project' },
-  { key = 'e', desc = 'Execute command' },
-  { key = 'a', desc = '[Projects] analyze dependencies' },
-  { key = '/, s', desc = '[Dependencies] search' },
-  { key = '<Ctrl>s', desc = '[Dependencies] switch window' },
+  { key = 'c',        desc = 'Create a new project' },
+  { key = 'e',        desc = 'Execute command' },
+  { key = 'a',        desc = '[Projects] analyze dependencies' },
+  { key = '/, s',     desc = '[Dependencies] search' },
+  { key = '<Ctrl>s',  desc = '[Dependencies] switch window' },
   { key = '<Esc>, q', desc = 'Close' },
 }
 
 M.mount = function()
-  local opts = vim.tbl_deep_extend('force', {
+  local opts = {
     enter = true,
     ns_id = MavenConfig.namespace,
     relative = 'win',
@@ -35,9 +35,12 @@ M.mount = function()
         top = ' Maven Help? ',
         top_align = 'center',
       },
+
+      style = MavenConfig.options.help_view.border.style,
+      padding = MavenConfig.options.help_view.border.padding or { 0, 0, 0, 0 },
     },
     size = MavenConfig.options.help_view.size,
-  }, { border = MavenConfig.options.help_view.border })
+  }
   local popup = NuiPopup(opts)
 
   popup:mount()

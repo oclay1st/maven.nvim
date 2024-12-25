@@ -3,7 +3,7 @@ vim.api.nvim_create_user_command('Maven', function()
 end, { desc = 'Toggles Maven UI', bar = true, nargs = 0 })
 
 vim.api.nvim_create_user_command('MavenExec', function()
-  require('maven').show_execute_view()
+  require('maven').show_execution_view()
 end, { desc = 'Show Maven Execute UI', bar = true, nargs = 0 })
 
 vim.api.nvim_create_user_command('MavenInit', function()

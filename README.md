@@ -51,16 +51,8 @@ This plugin is under **Development**.
 
 ```lua
 {
-  mvn_executable = 'mvn',
+  mvn_executable = 'mvn', -- Example: mvn, ./mvnw or a path to Maven executable
   project_scanner_depth = 5,
-  custom_commands = {
-    -- Example: 
-    -- {
-    --   name = "lazy",
-    --   cmd_args = { "clean", "package", "-DskipTests" },
-    --   description = "clean package and skip tests",
-    -- }
-  },
   console = {
     show_command_execution = true,
     show_lifecycle_execution = true,
@@ -71,6 +63,14 @@ This plugin is under **Development**.
     clean_before_execution = true,
   },
   projects_view = {
+    custom_commands = {
+    -- Example: 
+    -- {
+    --   name = "lazy",
+    --   cmd_args = { "clean", "package", "-DskipTests" },
+    --   description = "clean package and skip tests",
+    -- }
+    },
     position = 'right',
     size = 65,
   },
@@ -80,7 +80,7 @@ This plugin is under **Development**.
       height = '80%',
     },
     resolved_dependencies_win = {
-      border = { style = 'rounded' }, -- see the nui doc for details about border
+      border = { style = 'rounded' },
     },
     dependency_usages_win = {
       border = { style = 'rounded' },
@@ -90,10 +90,10 @@ This plugin is under **Development**.
     },
   },
   initializer_view = {
-    name_win = {
+    project_name_win = {
       border = { style = 'rounded' },
     },
-    package_win = {
+    project_package_win = {
       default_value = '', -- Example: io.github.username
       border = { style = 'rounded' },
     },
@@ -120,7 +120,7 @@ This plugin is under **Development**.
       border = { style = 'rounded' },
     },
   },
-  execute_view = {
+  execution_view = {
     size = {
       width = '40%',
       height = '60%',

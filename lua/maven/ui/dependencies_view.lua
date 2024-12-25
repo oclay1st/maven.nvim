@@ -95,8 +95,10 @@ function DependenciesView:_create_dependencies_win()
     enter = true,
     border = {
       text = { top = ' Resolved Dependencies (' .. self.project_name .. ') ' },
+      style = MavenConfig.options.dependencies_view.resolved_dependencies_win.border.style,
+      padding = MavenConfig.options.dependencies_view.resolved_dependencies_win.border.padding or { 0, 0, 0, 0 }
     },
-  }, { border = MavenConfig.options.dependencies_view.dependency_usages_win.border })
+  })
   self._dependencies_win = Popup(dependencies_win_opts)
   self:_create_dependencies_tree()
   local indexed_dependencies = {}
@@ -159,7 +161,7 @@ function DependenciesView:_create_dependencies_tree()
       local line = NuiLine()
       line:append(' ')
       local icon = node.has_conflict and MavenConfig.options.icons.warning
-        or MavenConfig.options.icons.package
+          or MavenConfig.options.icons.package
       local icon_highlight = node.has_conflict and 'DiagnosticWarn' or highlights.SPECIAL
       line:append(icon .. ' ', icon_highlight)
       line:append(node.text)
@@ -201,8 +203,10 @@ function DependenciesView:_create_dependency_usages_win()
   local dependency_usages_win_opts = vim.tbl_deep_extend('force', self._default_opts, {
     border = {
       text = { top = ' Dependency Usages ' },
+      style = MavenConfig.options.dependencies_view.dependency_usages_win.border.style,
+      padding = MavenConfig.options.dependencies_view.dependency_usages_win.border.padding or { 0, 0, 0, 0 }
     },
-  }, { border = MavenConfig.options.dependencies_view.dependency_usages_win.border })
+  })
   self._dependency_usages_win = Popup(dependency_usages_win_opts)
   self:_create_dependency_usages_tree()
   self._dependency_usages_win:map('n', '<enter>', function()
@@ -295,13 +299,14 @@ function DependenciesView:_create_dependency_filter()
       width = win_width,
     },
     zindex = 60,
-    border = vim.tbl_deep_extend('force', {
-      style = 'rounded',
+    border = {
       text = {
         top = 'Filter',
         top_align = 'center',
       },
-    }, MavenConfig.options.dependencies_view.filter_win.border),
+      style = MavenConfig.options.dependencies_view.filter_win.border.style,
+      padding = MavenConfig.options.dependencies_view.filter_win.border.padding or { 0, 0, 0, 0 },
+    },
   }, {
     prompt = NuiText(MavenConfig.options.icons.search .. '  ', highlights.SPECIAL),
     on_change = function(value)

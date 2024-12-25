@@ -2,15 +2,15 @@ local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
 local Sources = require('maven.sources')
 local ProjectView = require('maven.ui.projects_view')
-local ExecuteView = require('maven.ui.execute_view')
+local ExecutionView = require('maven.ui.execution_view')
 local InitializerView = require('maven.ui.initializer_view')
 
 ---@class Maven
 local M = {}
 ---@type ProjectView
 local projects_view
----@type ExecuteView
-local execute_view
+---@type ExecutionView
+local execution_view
 ---@type InitializerView
 local initializer_view
 
@@ -49,11 +49,11 @@ M.refresh = function()
   load_projects_view()
 end
 
-M.show_execute_view = function()
-  if not execute_view then
-    execute_view = ExecuteView:new()
+M.show_execution_view = function()
+  if not execution_view then
+    execution_view = ExecutionView:new()
   end
-  execute_view:mount()
+  execution_view:mount()
 end
 
 M.show_initializer_view = function()

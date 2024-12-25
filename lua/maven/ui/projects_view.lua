@@ -372,8 +372,6 @@ end
 function ProjectView:_render_menu_header_line()
   local line = NuiLine()
   local separator = ' '
-  line:append(' ' .. MavenConfig.options.icons.maven, highlights.SPECIAL)
-  line:append(' Maven ' .. separator)
   line:append(
     MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.command,
     highlights.SPECIAL
@@ -392,6 +390,12 @@ function ProjectView:_render_menu_header_line()
   )
   line:append(' Execute')
   line:append('<e>' .. separator, highlights.COMMENT)
+  -- line:append(
+  --   MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.command,
+  --   highlights.SPECIAL
+  -- )
+  -- line:append(' Args')
+  -- line:append('<g>' .. separator, highlights.COMMENT)
   line:append(
     MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.help,
     highlights.SPECIAL
@@ -411,7 +415,7 @@ end
 ---@private Create the projects header line
 function ProjectView:_create_projects_line()
   local line = NuiLine()
-  line:append(' Projects:', highlights.COMMENT)
+  line:append(MavenConfig.options.icons.maven .. ' Maven Projects:', highlights.COMMENT)
   if #self.projects == 0 then
     line:append(' (Projects not found, create a new one!) ', highlights.COMMENT)
   end
@@ -437,7 +441,7 @@ function ProjectView:_setup_win_maps()
   end)
 
   self._win:map('n', 'e', function()
-    require('maven').show_execute_view()
+    require('maven').show_execution_view()
   end, { noremap = true, nowait = true })
 
   self._win:map('n', 'a', function()

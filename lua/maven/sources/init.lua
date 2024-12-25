@@ -37,9 +37,9 @@ end
 
 local create_custom_commands = function()
   local _commands = {}
-  for index, custom_command in ipairs(MavenConfig.options.custom_commands) do
+  for index, custom_command in ipairs(MavenConfig.options.projects_view.custom_commands) do
     _commands[index] =
-      Project.Command(custom_command.name, custom_command.description, custom_command.cmd_args)
+        Project.Command(custom_command.name, custom_command.description, custom_command.cmd_args)
   end
   return _commands
 end
@@ -48,7 +48,7 @@ M.create_project_from_pom = function(pom_xml_path)
   local pom = PomParser.parse_file(pom_xml_path)
   local project_path = pom_xml_path:gsub(pom_xml_file_pattern, '')
   local project =
-    Project.new(project_path, pom_xml_path, pom.group_id, pom.artifact_id, pom.version, pom.name)
+      Project.new(project_path, pom_xml_path, pom.group_id, pom.artifact_id, pom.version, pom.name)
   project:set_commands(custom_commands)
   for _, module_path in ipairs(pom.module_paths) do
     local module_pom = Path:new(project_path, module_path, 'pom.xml') ---@type Path
@@ -105,7 +105,7 @@ M.load_project_dependencies = function(pom_xml_path, callback)
     callback(state, dependencies)
   end
   local command =
-    CommandBuilder.build_mvn_dependencies_cmd(pom_xml_path, output_dir, output_filename)
+      CommandBuilder.build_mvn_dependencies_cmd(pom_xml_path, output_dir, output_filename)
   console.execute_command(command.cmd, command.args, show_output, _callback)
 end
 

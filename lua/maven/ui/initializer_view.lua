@@ -65,8 +65,12 @@ end
 function InitializerView:_create_project_name_component()
   self._project_name_component = Input(
     vim.tbl_deep_extend('force', self._default_opts, {
-      border = { text = { top = ' Create Maven Project - Name 1/5 ' } },
-    }, { border = MavenConfig.options.initializer_view.name_win.border }),
+      border = {
+        text = { top = ' Create Maven Project - Name 1/5 ' },
+        style = MavenConfig.options.initializer_view.project_name_win.border.style,
+        padding = MavenConfig.options.initializer_view.project_name_win.border.padding or { 0, 0, 0, 0 }
+      },
+    }),
     {
       prompt = '> ',
       on_change = function(value)
@@ -99,10 +103,14 @@ end
 function InitializerView:_create_project_package_component()
   self._project_package_component = Input(
     vim.tbl_deep_extend('force', self._default_opts, {
-      border = { text = { top = ' Create Maven Project - Package 2/5 ' } },
-    }, { border = MavenConfig.options.initializer_view.package_win.border }),
+      border = {
+        text = { top = ' Create Maven Project - Package 2/5 ' },
+        style = MavenConfig.options.initializer_view.project_package_win.border.style,
+        padding = MavenConfig.options.initializer_view.project_package_win.border.padding or { 0, 0, 0, 0 }
+      },
+    }),
     {
-      default_value = MavenConfig.options.initializer_view.package_win.default_value or '',
+      default_value = MavenConfig.options.initializer_view.project_package_win.default_value or '',
       prompt = '> ',
       on_change = function(value)
         self._project_package = value
@@ -162,8 +170,12 @@ function InitializerView:_create_archetype_version_component()
       cursorline = true,
       winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
     },
-    border = { text = { top = ' Create Maven Project - Archetype Version 4/5 ' } },
-  }, { border = MavenConfig.options.initializer_view.archetype_version_win.border })
+    border = {
+      text = { top = ' Create Maven Project - Archetype Version 4/5 ' },
+      style = MavenConfig.options.initializer_view.archetype_version_win.border.style,
+      padding = MavenConfig.options.initializer_view.archetype_version_win.border.padding or { 0, 0, 0, 0 }
+    },
+  })
   self._archetype_version_component = Popup(opts)
   local options_tree = Tree({
     ns_id = MavenConfig.namespace,
@@ -213,8 +225,12 @@ function InitializerView:_create_directory_component()
       cursorline = true,
       winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
     },
-    border = { text = { top = ' Create Maven Project - Directory 5/5 ' } },
-  }, { border = MavenConfig.options.initializer_view.workspaces_win.border }))
+    border = {
+      text = { top = ' Create Maven Project - Directory 5/5 ' },
+      style = MavenConfig.options.initializer_view.workspaces_win.border.style,
+      padding = MavenConfig.options.initializer_view.workspaces_win.border.padding or { 0, 0, 0, 0 }
+    },
+  }))
   local options_tree = Tree({
     ns_id = MavenConfig.namespace,
     bufnr = self._directory_component.bufnr,

@@ -64,7 +64,11 @@ function ArchetypeList:_create_options_component()
       cursorline = true,
       winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
     },
-  }, { border = MavenConfig.options.initializer_view.archetypes_win.options_win.border }))
+    border = {
+      style = MavenConfig.options.initializer_view.archetypes_win.options_win.border.style,
+      padding = MavenConfig.options.initializer_view.archetypes_win.options_win.border.padding or { 0, 0, 0, 0 }
+    }
+  }))
   self:_create_options_tree()
   self._options_component:map('n', '<enter>', function()
     self:_submit_option()
@@ -141,8 +145,10 @@ function ArchetypeList:_create_input_component()
     vim.tbl_deep_extend('force', self._default_opts, {
       border = {
         text = { top = self._options.title, top_align = 'center' },
+        style = MavenConfig.options.initializer_view.archetypes_win.input_win.border.style,
+        padding = MavenConfig.options.initializer_view.archetypes_win.input_win.border.padding or { 0, 0, 0, 0 }
       },
-    }, { border = MavenConfig.options.initializer_view.archetypes_win.input_win.border }),
+    }),
     {
       prompt = '> ',
       on_change = function(query)

@@ -3,14 +3,15 @@ local M = {}
 
 M.namespace = vim.api.nvim_create_namespace('maven')
 
----@class ProjectsView
----@field position string
----@field size integer
-
 ---@class CustomCommand
 ---@field name string lifecycle name
 ---@field description string
 ---@field cmd_args string[] the list of args
+
+---@class ProjectsView
+---@field custom_commands CustomCommand[]
+---@field position string
+---@field size integer
 
 ---@class ConsoleView
 ---@field show_lifecycle_execution boolean
@@ -33,13 +34,12 @@ M.namespace = vim.api.nvim_create_namespace('maven')
 ---@field projects_view? ProjectsView
 ---@field console ConsoleView
 ---@field mvn_executable string the name or path of mvn
----@field custom_commands CustomCommand[]
 ---@field project_scanner_depth number
 local defaultOptions = {
   mvn_executable = 'mvn',
   project_scanner_depth = 5,
-  custom_commands = {},
   projects_view = {
+    custom_commands = {},
     position = 'right',
     size = 65,
   },
@@ -59,10 +59,10 @@ local defaultOptions = {
     },
   },
   initializer_view = {
-    name_win = {
+    project_name_win = {
       border = { style = 'rounded' },
     },
-    package_win = {
+    project_package_win = {
       default_value = '',
       border = { style = 'rounded' },
     },
@@ -83,13 +83,13 @@ local defaultOptions = {
     },
     workspaces_win = {
       options = {
-        { name = 'HOME', path = vim.loop.os_homedir() },
+        { name = 'HOME',        path = vim.loop.os_homedir() },
         { name = 'CURRENT_DIR', path = vim.fn.getcwd() },
       },
       border = { style = 'rounded' },
     },
   },
-  execute_view = {
+  execution_view = {
     size = {
       width = '40%',
       height = '60%',
