@@ -59,8 +59,11 @@ local function create_option_node(option)
 end
 
 ---@private Load options nodes
-function ExecutionView:_load_options_nodes()
-  Sources.load_help_options(function(state, help_options)
+---@param force? boolean
+function ExecutionView:_load_options_nodes(force)
+  self._options_tree:add_node(Tree.Node({ text = '...Loading options', type = 'loading' }))
+  self._options_tree:render()
+  Sources.load_help_options(force, function(state, help_options)
     vim.schedule(function()
       if Utils.SUCCEED_STATE == state then
         table.sort(help_options, function(a, b)
@@ -99,8 +102,6 @@ function ExecutionView:_create_options_tree_list()
       return line
     end,
   })
-  self._options_tree:add_node(Tree.Node({ text = '...Loading options', type = 'loading' }))
-  self._options_tree:render()
   self:_load_options_nodes()
 end
 
@@ -112,7 +113,7 @@ function ExecutionView:_on_input_change(query)
     return
   end
   query = string.match(query, '%s$') and '' or query -- reset if end on space
-  query = string.match(query, '(%S+)$') or ''        -- take the last option to query
+  query = string.match(query, '(%S+)$') or '' -- take the last option to query
   vim.schedule(function()
     query = string.gsub(query, '%W', '%%%1')
     local nodes = {}
@@ -188,7 +189,7 @@ function ExecutionView:_create_options_component()
     border = {
       style = MavenConfig.options.execution_view.options_win.border.style,
       padding = MavenConfig.options.execution_view.options_win.border.padding or { 0, 0, 0, 0 },
-    }
+    },
   }))
   self:_create_options_tree_list()
   self._options_component:map('n', '<enter>', function()
@@ -216,7 +217,9 @@ function ExecutionView:_create_options_component()
   end)
   self._options_component:map('n', { '<esc>', 'q' }, function()
     self._layout:unmount()
-    vim.api.nvim_set_current_win(self._prev_win)
+    if vim.api.nvim_win_is_valid(self._prev_win) then
+      vim.api.nvim_set_current_win(self._prev_win)
+    end
   end)
 end
 

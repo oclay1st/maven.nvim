@@ -30,11 +30,18 @@ M.namespace = vim.api.nvim_create_namespace('maven')
 ---@field name string
 ---@field path string
 
+---@class Cache
+---@field enable_dependencies_cache boolean
+---@field enable_plugins_cache boolean
+---@field enable_help_options_cache boolean
+
 ---@class MavenOptions
 ---@field projects_view? ProjectsView
 ---@field console ConsoleView
 ---@field mvn_executable string the name or path of mvn
 ---@field project_scanner_depth number
+---@field enable_cache boolean
+---@field cache Cache
 local defaultOptions = {
   mvn_executable = 'mvn',
   project_scanner_depth = 5,
@@ -83,7 +90,7 @@ local defaultOptions = {
     },
     workspaces_win = {
       options = {
-        { name = 'HOME',        path = vim.loop.os_homedir() },
+        { name = 'HOME', path = vim.loop.os_homedir() },
         { name = 'CURRENT_DIR', path = vim.fn.getcwd() },
       },
       border = { style = 'rounded' },
@@ -108,7 +115,7 @@ local defaultOptions = {
   help_view = {
     size = {
       width = '80%',
-      height = '20%',
+      height = '25%',
     },
     border = { style = 'rounded' },
   },
@@ -120,6 +127,11 @@ local defaultOptions = {
     show_plugins_load_execution = false,
     show_project_create_execution = true,
     clean_before_execution = true,
+  },
+  cache = {
+    enable_dependencies_cache = true,
+    enable_plugins_cache = true,
+    enable_help_options_cache = true,
   },
   icons = {
     plugin = '',

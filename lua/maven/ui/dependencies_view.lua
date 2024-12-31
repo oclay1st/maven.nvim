@@ -96,7 +96,8 @@ function DependenciesView:_create_dependencies_win()
     border = {
       text = { top = ' Resolved Dependencies (' .. self.project_name .. ') ' },
       style = MavenConfig.options.dependencies_view.resolved_dependencies_win.border.style,
-      padding = MavenConfig.options.dependencies_view.resolved_dependencies_win.border.padding or { 0, 0, 0, 0 }
+      padding = MavenConfig.options.dependencies_view.resolved_dependencies_win.border.padding
+        or { 0, 0, 0, 0 },
     },
   })
   self._dependencies_win = Popup(dependencies_win_opts)
@@ -125,10 +126,10 @@ function DependenciesView:_create_dependencies_win()
   ---Setup the filter
   self._dependencies_win:map('n', { '/', 's' }, function()
     self:_toggle_filter()
-  end)
-  self._dependencies_win:map('n', { '<c-s>' }, function()
+  end, { noremap = true, nowait = true })
+  self._dependencies_win:map('n', { '<c-l>', '<c-s>' }, function()
     vim.api.nvim_set_current_win(self._dependency_usages_win.winid)
-  end)
+  end, { nowait = true })
 end
 
 ---@private Toggle filter
@@ -161,7 +162,7 @@ function DependenciesView:_create_dependencies_tree()
       local line = NuiLine()
       line:append(' ')
       local icon = node.has_conflict and MavenConfig.options.icons.warning
-          or MavenConfig.options.icons.package
+        or MavenConfig.options.icons.package
       local icon_highlight = node.has_conflict and 'DiagnosticWarn' or highlights.SPECIAL
       line:append(icon .. ' ', icon_highlight)
       line:append(node.text)
@@ -204,7 +205,8 @@ function DependenciesView:_create_dependency_usages_win()
     border = {
       text = { top = ' Dependency Usages ' },
       style = MavenConfig.options.dependencies_view.dependency_usages_win.border.style,
-      padding = MavenConfig.options.dependencies_view.dependency_usages_win.border.padding or { 0, 0, 0, 0 }
+      padding = MavenConfig.options.dependencies_view.dependency_usages_win.border.padding
+        or { 0, 0, 0, 0 },
     },
   })
   self._dependency_usages_win = Popup(dependency_usages_win_opts)
@@ -224,9 +226,9 @@ function DependenciesView:_create_dependency_usages_win()
       self._dependency_usages_tree:render()
     end
   end)
-  self._dependency_usages_win:map('n', { '<c-s>' }, function()
+  self._dependency_usages_win:map('n', { '<c-h>', '<c-s>' }, function()
     vim.api.nvim_set_current_win(self._dependencies_win.winid)
-  end)
+  end, { nowait = true })
 end
 
 ---@private Create the dependency usages tree
@@ -316,13 +318,13 @@ function DependenciesView:_create_dependency_filter()
 
   self._dependency_filter:map('i', '<enter>', function()
     self:_toggle_filter()
-  end)
+  end, { noremap = true, nowait = true })
   self._dependency_filter:map('n', '<enter>', function()
     self:_toggle_filter()
-  end)
+  end, { noremap = true, nowait = true })
   self._dependency_filter:map('n', { '<esc>', 'q' }, function()
     self:_toggle_filter()
-  end)
+  end, { noremap = true, nowait = true })
 end
 
 ---@private Create the component layout

@@ -22,6 +22,7 @@ This plugin is under **Development**.
 - Analyze dependencies usages, conflicts and duplications
 - Enqueue multiple goal executions
 - Show the output of the commands executions
+- Cache dependencies, plugins and command options
 
 ## ⚡️ Requirements
 
@@ -61,6 +62,11 @@ This plugin is under **Development**.
     show_plugins_load_execution = false,
     show_project_create_execution = true,
     clean_before_execution = true,
+  },
+  cache = {
+    enable_dependencies_cache = true,
+    enable_plugins_cache = true,
+    enable_help_options_cache = true,
   },
   projects_view = {
     custom_commands = {

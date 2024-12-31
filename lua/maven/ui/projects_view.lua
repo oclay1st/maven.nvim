@@ -130,12 +130,14 @@ end
 ---@private Load the dependency nodes for the tree
 ---@param node NuiTree.Node
 ---@param project Project
+---@param force? boolean
 ---@param on_success? fun()
-function ProjectView:_load_dependencies_nodes(node, project, on_success)
-  Sources.load_project_dependencies(project.pom_xml_path, function(state, dependencies)
+function ProjectView:_load_dependencies_nodes(node, project, force, on_success)
+  Sources.load_project_dependencies(project.pom_xml_path, force, function(state, dependencies)
     vim.schedule(function()
       if state == Utils.SUCCEED_STATE then
         project:set_dependencies(dependencies)
+        self._tree:set_nodes({}, node:get_id())
         for _, dependency in ipairs(dependencies) do
           local dependency_node = NuiTree.Node({
             id = dependency.id,
@@ -163,12 +165,15 @@ end
 ---@private Load the plugin nodes for the tree
 ---@param node NuiTree.Node
 ---@param project Project
-function ProjectView:_load_plugins_nodes(node, project)
-  Sources.load_project_plugins(project.pom_xml_path, function(state, plugins)
+---@param force? boolean
+---@param on_success? fun()
+function ProjectView:_load_plugins_nodes(node, project, force, on_success)
+  Sources.load_project_plugins(project.pom_xml_path, force, function(state, plugins)
     vim.schedule(function()
       if state == Utils.SUCCEED_STATE then
         project:set_plugins(plugins)
         local plugin_nodes = {}
+        self._tree:set_nodes({}, node:get_id())
         for _, plugin in ipairs(project.plugins) do
           local plugin_node = NuiTree.Node({
             id = Utils.uuid(),
@@ -185,7 +190,11 @@ function ProjectView:_load_plugins_nodes(node, project)
         end
         node.is_loaded = true
         self._tree:set_nodes(plugin_nodes, node._id)
-        node:expand()
+        if on_success then
+          on_success()
+        else
+          node:expand()
+        end
       end
       node.state = state
       self._tree:render()
@@ -283,6 +292,7 @@ function ProjectView:_create_project_node(project)
 
   ---Map Plugins node
   local plugins_node = NuiTree.Node({
+    id = project.id .. '-plugins',
     text = 'Plugins',
     type = 'plugins',
     is_loaded = false,
@@ -341,13 +351,13 @@ function ProjectView:_render_projects_tree()
       else
         line:append(node.text)
       end
+      if node.description then
+        line:append(' (' .. node.description .. ')', highlights.COMMENT)
+      end
       if node.state == Utils.STARTED_STATE then
         line:append(props.started_state_msg, highlights.INFO)
       elseif node.state == Utils.PENDING_STATE then
         line:append(props.pending_state_msg, highlights.WARN)
-      end
-      if node.description then
-        line:append(' (' .. node.description .. ')', highlights.COMMENT)
       end
       return line
     end,
@@ -457,10 +467,36 @@ function ProjectView:_setup_win_maps()
       local dependency_view = DependenciesView.new(project.name, project.dependencies)
       dependency_view:mount()
     else
-      self:_load_dependencies_nodes(dependencies_node, project, function()
+      self:_load_dependencies_nodes(dependencies_node, project, false, function()
         local dependency_view = DependenciesView.new(project.name, project.dependencies)
         dependency_view:mount()
       end)
+    end
+  end, { noremap = true, nowait = true })
+
+  self._win:map('n', { '<c-r>' }, function()
+    local node = self._tree:get_node()
+    if node == nil then
+      return
+    end
+    local updated = false
+    local project = self:_lookup_project(node.project_id)
+    if node.type == 'dependencies' or node.type == 'dependency' then
+      local dependencies_node = self._tree:get_node('-' .. project.id .. '-dependencies')
+      assert(dependencies_node, "Dependencies node doesn't exist on project: " .. project.root_path)
+      self:_load_dependencies_nodes(dependencies_node, project, true, function()
+        vim.notify('Dependencies reloaded successfully')
+      end)
+    end
+    if node.type == 'plugins' or node.type == 'plugin' then
+      local pluins_node = self._tree:get_node('-' .. project.id .. '-plugins')
+      assert(pluins_node, "Plugins node doesn't exist on project: " .. project.root_path)
+      self:_load_plugins_nodes(pluins_node, project, true, function()
+        vim.notify('Plugins reloaded successfully')
+      end)
+    end
+    if updated then
+      self._tree:render()
     end
   end, { noremap = true, nowait = true })
 
