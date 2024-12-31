@@ -68,7 +68,8 @@ function InitializerView:_create_project_name_component()
       border = {
         text = { top = ' Create Maven Project - Name 1/5 ' },
         style = MavenConfig.options.initializer_view.project_name_win.border.style,
-        padding = MavenConfig.options.initializer_view.project_name_win.border.padding or { 0, 0, 0, 0 }
+        padding = MavenConfig.options.initializer_view.project_name_win.border.padding
+          or { 0, 0, 0, 0 },
       },
     }),
     {
@@ -106,7 +107,8 @@ function InitializerView:_create_project_package_component()
       border = {
         text = { top = ' Create Maven Project - Package 2/5 ' },
         style = MavenConfig.options.initializer_view.project_package_win.border.style,
-        padding = MavenConfig.options.initializer_view.project_package_win.border.padding or { 0, 0, 0, 0 }
+        padding = MavenConfig.options.initializer_view.project_package_win.border.padding
+          or { 0, 0, 0, 0 },
       },
     }),
     {
@@ -173,7 +175,8 @@ function InitializerView:_create_archetype_version_component()
     border = {
       text = { top = ' Create Maven Project - Archetype Version 4/5 ' },
       style = MavenConfig.options.initializer_view.archetype_version_win.border.style,
-      padding = MavenConfig.options.initializer_view.archetype_version_win.border.padding or { 0, 0, 0, 0 }
+      padding = MavenConfig.options.initializer_view.archetype_version_win.border.padding
+        or { 0, 0, 0, 0 },
     },
   })
   self._archetype_version_component = Popup(opts)
@@ -228,7 +231,8 @@ function InitializerView:_create_directory_component()
     border = {
       text = { top = ' Create Maven Project - Directory 5/5 ' },
       style = MavenConfig.options.initializer_view.workspaces_win.border.style,
-      padding = MavenConfig.options.initializer_view.workspaces_win.border.padding or { 0, 0, 0, 0 }
+      padding = MavenConfig.options.initializer_view.workspaces_win.border.padding
+        or { 0, 0, 0, 0 },
     },
   }))
   local options_tree = Tree({
