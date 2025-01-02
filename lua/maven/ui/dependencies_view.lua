@@ -163,7 +163,7 @@ function DependenciesView:_create_dependencies_tree()
       line:append(' ')
       local icon = node.has_conflict and MavenConfig.options.icons.warning
         or MavenConfig.options.icons.package
-      local icon_highlight = node.has_conflict and 'DiagnosticWarn' or highlights.SPECIAL
+      local icon_highlight = node.has_conflict and highlights.WARN or highlights.SPECIAL
       line:append(icon .. ' ', icon_highlight)
       line:append(node.text)
       if node.scope then
@@ -247,7 +247,7 @@ function DependenciesView:_create_dependency_usages_tree()
       local icon = MavenConfig.options.icons.package
       local icon_highlight = highlights.SPECIAL
       if node.has_conflict and not node:has_children() then
-        icon_highlight = 'DiagnosticWarn'
+        icon_highlight = highlights.WARN
         icon = MavenConfig.options.icons.warning
       end
       line:append(icon .. ' ', icon_highlight)
