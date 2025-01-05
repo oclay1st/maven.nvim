@@ -26,6 +26,7 @@ This plugin is under **Development**.
 
 ## ⚡️ Requirements
 
+-  Neovim 0.10 or superior
 -  For Unix systems:
    - `unzip`
 -  For Windows systems(untested):

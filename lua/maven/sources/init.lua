@@ -65,18 +65,6 @@ M.create_project_from_pom = function(pom_xml_path)
   return project
 end
 
---- Load the project cache
---- @param pom_xml_path string
---- @return ProjectCache | nil
-M.load_project_cache = function(pom_xml_path)
-  local projects_cache = ProjectsCacheParser:parse()
-  for _, item in ipairs(projects_cache) do
-    if item.path == pom_xml_path then
-      return item
-    end
-  end
-end
-
 ---Load the maven projects given a directory
 ---@param base_path string
 M.scan_projects = function(base_path, callback)
@@ -98,6 +86,18 @@ M.scan_projects = function(base_path, callback)
       callback(projects)
     end,
   })
+end
+
+--- Load the project cache
+--- @param pom_xml_path string
+--- @return ProjectCache | nil
+M.load_project_cache = function(pom_xml_path)
+  local projects_cache = ProjectsCacheParser:parse()
+  for _, item in ipairs(projects_cache) do
+    if item.path == pom_xml_path then
+      return item
+    end
+  end
 end
 
 M.load_project_dependencies = function(pom_xml_path, force, callback)

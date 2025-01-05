@@ -9,6 +9,7 @@ local help_keys = {
   { key = 'c', desc = 'Create a new project' },
   { key = 'e', desc = 'Execute command' },
   { key = 'a', desc = '[Projects] analyze dependencies' },
+  { key = 'g', desc = 'Set default arguments' },
   { key = '<Ctrl-r>', desc = '[Projects] reload' },
   { key = '/, s', desc = '[Dependencies] search' },
   { key = '<Ctrl-s>', desc = '[Dependencies] switch window' },
@@ -36,7 +37,6 @@ M.mount = function()
         top = ' Maven Help? ',
         top_align = 'center',
       },
-
       style = MavenConfig.options.help_view.border.style,
       padding = MavenConfig.options.help_view.border.padding or { 0, 0, 0, 0 },
     },

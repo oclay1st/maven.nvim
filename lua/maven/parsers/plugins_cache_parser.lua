@@ -34,11 +34,11 @@ M.dump = function(key, plugins)
   end
   ---@type PluginCache[]
   local plugins_cache = {}
-  for _, dependency in ipairs(plugins) do
+  for _, plugin in ipairs(plugins) do
     table.insert(plugins_cache, {
-      group_id = dependency.group_id,
-      artifact_id = dependency.artifact_id,
-      version = dependency.version,
+      group_id = plugin.group_id,
+      artifact_id = plugin.artifact_id,
+      version = plugin.version,
     })
   end
   local data = vim.json.encode(plugins_cache)

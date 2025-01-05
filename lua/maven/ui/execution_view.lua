@@ -182,10 +182,7 @@ end
 ---@private Create the options component
 function ExecutionView:_create_options_component()
   self._options_component = Popup(vim.tbl_deep_extend('force', self._default_opts, {
-    win_options = {
-      cursorline = true,
-      winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT,
-    },
+    win_options = { cursorline = true, winhighlight = highlights.DEFAULT_WIN_HIGHLIGHT },
     border = {
       style = MavenConfig.options.execution_view.options_win.border.style,
       padding = MavenConfig.options.execution_view.options_win.border.padding or { 0, 0, 0, 0 },

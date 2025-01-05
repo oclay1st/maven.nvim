@@ -479,7 +479,6 @@ function ProjectView:_setup_win_maps()
     if node == nil then
       return
     end
-    local updated = false
     local project = self:_lookup_project(node.project_id)
     if node.type == 'dependencies' or node.type == 'dependency' then
       local dependencies_node = self._tree:get_node('-' .. project.id .. '-dependencies')
@@ -494,9 +493,6 @@ function ProjectView:_setup_win_maps()
       self:_load_plugins_nodes(pluins_node, project, true, function()
         vim.notify('Plugins reloaded successfully')
       end)
-    end
-    if updated then
-      self._tree:render()
     end
   end, { noremap = true, nowait = true })
 
