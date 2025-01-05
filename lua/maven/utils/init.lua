@@ -43,4 +43,18 @@ M.get_plugin_root_dir = function()
   return dir_path .. '..'
 end
 
+M.humanize_size = function(size)
+  if not size then
+    return nil
+  end
+  local units = { 'B', 'KB', 'MB', 'GB', 'TB' }
+  local unit_index = 1
+
+  while size >= 1024 and unit_index < #units do
+    size = size / 1024
+    unit_index = unit_index + 1
+  end
+  return string.format('%.2f %s', size, units[unit_index])
+end
+
 return M

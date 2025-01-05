@@ -163,6 +163,7 @@ end
 ---@field group_id string
 ---@field artifact_id string
 ---@field version string
+---@field size number | nil
 ---@field scope string
 ---@field is_duplicate boolean
 ---@field conflict_version string
@@ -184,6 +185,7 @@ end
 ---@param scope? string
 ---@param is_duplicate? boolean
 ---@param conflict_version? string
+---@param size? number
 ---@return Project.Dependency
 function Project.Dependency(
   id,
@@ -193,7 +195,8 @@ function Project.Dependency(
   version,
   scope,
   is_duplicate,
-  conflict_version
+  conflict_version,
+  size
 )
   local self = {}
   setmetatable(self, Dependency)
@@ -205,6 +208,7 @@ function Project.Dependency(
   self.scope = scope
   self.is_duplicate = is_duplicate or false
   self.conflict_version = conflict_version
+  self.size = size
   return self
 end
 

@@ -6,6 +6,7 @@ local Path = require('plenary.path')
 local PomParser = require('maven.parsers.pom_xml_parser')
 local EffectivePomParser = require('maven.parsers.epom_xml_parser')
 local DependencyTreeParser = require('maven.parsers.dependency_tree_parser')
+local DependenciesCacheParser = require('maven.parsers.dependencies_cache_parser')
 local PluginXmlParser = require('maven.parsers.plugin_xml_parser')
 local HelpOptionsParser = require('maven.parsers.help_options_parser')
 local ArchetypeCatalogParser = require('maven.parsers.archetype_catalog_parser')
@@ -16,6 +17,8 @@ local HelpOptionsCacheParser = require('maven.parsers.help_options_cache_parser'
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Utils = require('maven.utils')
 local console = require('maven.utils.console')
+
+local uv = vim.loop
 
 local pom_xml_file_pattern = '**/pom.xml$'
 
@@ -112,7 +115,8 @@ M.load_project_dependencies = function(pom_xml_path, force, callback)
     if state == Utils.SUCCEED_STATE then
       local dependency_tree_path = Path:new(output_dir, output_filename)
       dependencies = DependencyTreeParser.parse_file(dependency_tree_path:absolute())
-      M.create_dependencies_cache(pom_xml_path, dependency_tree_path)
+      M.set_dependencies_size(dependencies)
+      M.create_dependencies_cache(pom_xml_path, dependencies)
       dependency_tree_path:rm()
     elseif state == Utils.FAILED_STATE then
       local error_msg = 'Error loading dependencies. '
@@ -140,11 +144,7 @@ M.load_dependencies_cache = function(pom_xml_path, callback)
   if not project_cache then
     return false
   end
-  local cache_path = Path:new(Utils.maven_cache_path, 'dependencies', project_cache.key .. '.txt')
-  if not cache_path:exists() then
-    return false
-  end
-  local dependencies = DependencyTreeParser.parse_file(cache_path:absolute())
+  local dependencies = DependenciesCacheParser.parse(project_cache.key)
   if #dependencies == 0 then
     return false
   end
@@ -154,19 +154,29 @@ end
 
 ---Create the dependencies cache
 ---@param pom_xml_path string
----@param dependency_tree_path Path
-M.create_dependencies_cache = function(pom_xml_path, dependency_tree_path)
+---@param dependencies Project.Dependency[]
+M.create_dependencies_cache = function(pom_xml_path, dependencies)
   if not MavenConfig.options.cache.enable_dependencies_cache then
     return
   end
   local key = ProjectsCacheParser.register(pom_xml_path)
-  ---@type Path
-  local dependencies_cache_path = Path:new(Utils.maven_cache_path, 'dependencies')
-  if not dependencies_cache_path:exists() then
-    dependencies_cache_path:mkdir()
+  DependenciesCacheParser.dump(key, dependencies)
+end
+
+---Add size
+---@param dependencies Project.Dependency[]
+M.set_dependencies_size = function(dependencies)
+  for _, dependency in ipairs(dependencies) do
+    local jar_file_path = Path:new(
+      Utils.maven_local_repository_path,
+      string.gsub(dependency.group_id, '%.', Path.path.sep),
+      dependency.artifact_id,
+      dependency.version,
+      dependency.artifact_id .. '-' .. dependency.version .. '.jar'
+    ):absolute()
+    local stat = uv.fs_stat(jar_file_path) or {}
+    dependency.size = stat.size
   end
-  local cache_path = dependencies_cache_path:joinpath(key .. '.txt')
-  dependency_tree_path:copy({ destination = cache_path })
 end
 
 M.load_project_plugins = function(pom_xml_path, force, callback)

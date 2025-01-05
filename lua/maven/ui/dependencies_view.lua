@@ -8,6 +8,7 @@ local Layout = require('nui.layout')
 local event = require('nui.utils.autocmd').event
 local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
+local Utils = require('maven.utils')
 
 ---@class DependenciesView
 ---@field private _dependencies_win NuiPopup
@@ -66,6 +67,7 @@ local function create_tree_node(dependency)
     is_duplicate = dependency.is_duplicate,
     has_conflict = dependency.conflict_version and true or false,
     conflict_version = dependency.conflict_version,
+    size = dependency.size,
   })
 end
 
@@ -168,6 +170,11 @@ function DependenciesView:_create_dependencies_tree()
       line:append(node.text)
       if node.scope then
         line:append(' (' .. node.scope .. ')', highlights.COMMENT)
+      end
+      if self._dependencies_win.winid then
+        local width = vim.api.nvim_win_get_width(self._dependencies_win.winid) - line:width()
+        local size = Utils.humanize_size(node.size) or '-'
+        line:append(string.format('%' .. width .. 's  ', size .. ' '), highlights.COMMENT)
       end
       return line
     end,
@@ -375,6 +382,8 @@ function DependenciesView:mount()
   self._layout:mount()
   ---Setup the dependency filter
   self:_create_dependency_filter()
+  --- Render the dependencies tree to show the size
+  self._dependencies_tree:render()
 end
 
 return DependenciesView
