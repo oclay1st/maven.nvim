@@ -383,7 +383,7 @@ function ProjectView:_render_menu_header_line()
   local line = NuiLine()
   local separator = ' '
   line:append(
-    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.command,
+    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.new,
     highlights.SPECIAL
   )
   line:append(' Create')
@@ -400,12 +400,12 @@ function ProjectView:_render_menu_header_line()
   )
   line:append(' Execute')
   line:append('<e>' .. separator, highlights.COMMENT)
-  -- line:append(
-  --   MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.command,
-  --   highlights.SPECIAL
-  -- )
-  -- line:append(' Args')
-  -- line:append('<g>' .. separator, highlights.COMMENT)
+  line:append(
+    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.argument,
+    highlights.SPECIAL
+  )
+  line:append(' Args')
+  line:append('<g>' .. separator, highlights.COMMENT)
   line:append(
     MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.help,
     highlights.SPECIAL
@@ -442,6 +442,10 @@ end
 
 ---@private Setup key maps
 function ProjectView:_setup_win_maps()
+  self._win:map('n', 'g', function()
+    require('maven').show_argument_view()
+  end, { noremap = true })
+
   self._win:map('n', { '<esc>', 'q' }, function()
     self:hide()
   end, { noremap = true, nowait = true })

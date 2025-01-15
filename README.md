@@ -157,10 +157,27 @@ This plugin is under **Development**.
     },
     border = { style = 'rounded' },
   },
+  default_arguments_view = {
+    arguments = { },
+    size = {
+      width = '40%',
+      height = '60%',
+    },
+    input_win = {
+      border = {
+        style = { '╭', '─', '╮', '│', '│', '─', '│', '│' },
+      },
+    },
+    options_win = {
+      border = {
+        style = { '', '', '', '│', '╯', '─', '╰', '│' },
+      },
+    },
+  },
   icons = {
     plugin = '',
     package = '',
-    new_folder = '',
+    new = '',
     tree = '󰙅',
     expanded = ' ',
     collapsed = ' ',
@@ -175,6 +192,7 @@ This plugin is under **Development**.
     warning = '',
     entry = ' ',
     search = '',
+    argument = '',
   },
 }
 ```

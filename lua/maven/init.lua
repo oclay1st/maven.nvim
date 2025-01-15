@@ -4,15 +4,14 @@ local Sources = require('maven.sources')
 local ProjectView = require('maven.ui.projects_view')
 local ExecutionView = require('maven.ui.execution_view')
 local InitializerView = require('maven.ui.initializer_view')
+local ArgumentView = require('maven.ui.arguments_view')
 
----@class Maven
 local M = {}
----@type ProjectView
-local projects_view
----@type ExecutionView
-local execution_view
----@type InitializerView
-local initializer_view
+
+local projects_view ---@type ProjectView
+local execution_view ---@type ExecutionView
+local initializer_view ---@type InitializerView
+local argument_view ---@type ArgumentView
 
 ---Setup the plugin
 M.setup = function(opts)
@@ -62,4 +61,12 @@ M.show_initializer_view = function()
   end
   initializer_view:mount()
 end
+
+M.show_argument_view = function()
+  if not argument_view then
+    argument_view = ArgumentView.new()
+  end
+  argument_view:mount()
+end
+
 return M

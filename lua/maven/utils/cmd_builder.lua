@@ -27,6 +27,16 @@ CommandBuilder.build_mvn_cmd = function(pom_xml_path, extra_args)
   for _, value in ipairs(extra_args) do
     table.insert(_args, value)
   end
+  for i = 1, #MavenConfig.options.default_arguments_view.arguments do
+    if MavenConfig.options.default_arguments_view.arguments[i].enabled == true then
+      table.insert(
+        _args,
+        MavenConfig.options.default_arguments_view.arguments[i].arg
+          .. '='
+          .. MavenConfig.options.default_arguments_view.arguments[i].value
+      )
+    end
+  end
   return {
     cmd = MavenConfig.options.mvn_executable,
     args = _args,
