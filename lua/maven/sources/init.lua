@@ -115,7 +115,9 @@ M.load_project_dependencies = function(pom_xml_path, force, callback)
     if state == Utils.SUCCEED_STATE then
       local dependency_tree_path = Path:new(output_dir, output_filename)
       dependencies = DependencyTreeParser.parse_file(dependency_tree_path:absolute())
-      M.set_dependencies_size(dependencies)
+      for _, dependency in ipairs(dependencies) do
+        M.set_dependency_size(dependency)
+      end
       M.create_dependencies_cache(pom_xml_path, dependencies)
       dependency_tree_path:rm()
     elseif state == Utils.FAILED_STATE then
@@ -164,19 +166,17 @@ M.create_dependencies_cache = function(pom_xml_path, dependencies)
 end
 
 ---Add size
----@param dependencies Project.Dependency[]
-M.set_dependencies_size = function(dependencies)
-  for _, dependency in ipairs(dependencies) do
-    local jar_file_path = Path:new(
-      Utils.maven_local_repository_path,
-      string.gsub(dependency.group_id, '%.', Path.path.sep),
-      dependency.artifact_id,
-      dependency.version,
-      dependency.artifact_id .. '-' .. dependency.version .. '.jar'
-    ):absolute()
-    local stat = uv.fs_stat(jar_file_path) or {}
-    dependency.size = stat.size
-  end
+---@param dependency Project.Dependency
+M.set_dependency_size = function(dependency)
+  local jar_file_path = Path:new(
+    Utils.maven_local_repository_path,
+    string.gsub(dependency.group_id, '%.', Path.path.sep),
+    dependency.artifact_id,
+    dependency.version,
+    dependency.artifact_id .. '-' .. dependency.version .. '.jar'
+  ):absolute()
+  local stat = uv.fs_stat(jar_file_path) or {}
+  dependency.size = stat.size
 end
 
 M.load_project_plugins = function(pom_xml_path, force, callback)

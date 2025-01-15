@@ -12,8 +12,9 @@ local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
 ---@class PomParser
 local PomParser = {}
 
+---Parse the modules paths
 ---@return string[]
-local function build_modules_paths(_xml)
+local function parse_modules_paths(_xml)
   local modules = {}
   if _xml.project.modules then
     if vim.islist(_xml.project.modules.module) then
@@ -40,7 +41,7 @@ function PomParser.parse(pom_xml_content)
     artifact_id = assert(_xml.project.artifactId, 'Tag <artifactId> not found on pom file'),
     version = _xml.project.version,
     name = _xml.project.name,
-    module_paths = build_modules_paths(_xml),
+    module_paths = parse_modules_paths(_xml),
   }
 end
 

@@ -237,6 +237,7 @@ local plugin_patterns = {
 function Plugin:get_compact_name()
   return self.group_id .. ':' .. self.artifact_id .. ':' .. self.version
 end
+
 ---Get mini name
 --- TODO: review logic
 ---@return string

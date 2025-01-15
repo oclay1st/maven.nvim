@@ -16,6 +16,7 @@ local Utils = require('maven.utils')
 ---@field private _dependency_usages_win NuiPopup
 ---@field private _dependency_usages_tree NuiTree
 ---@field private _dependency_filter NuiInput
+---@field private _dependency_details_win NuiPopup
 ---@field private _layout NuiLayout
 ---@field private _default_opts table
 ---@field private _prev_win number
@@ -63,7 +64,10 @@ local function create_tree_node(dependency)
     id = dependency.id,
     text = dependency.artifact_id .. ':' .. dependency.version,
     name = dependency.group_id .. ':' .. dependency.artifact_id,
-    scope = dependency.scope,
+    group_id = dependency.group_id,
+    artifact_id = dependency.artifact_id,
+    version = dependency.version,
+    scopes = dependency.scope and { dependency.scope } or {},
     is_duplicate = dependency.is_duplicate,
     has_conflict = dependency.conflict_version and true or false,
     conflict_version = dependency.conflict_version,
@@ -125,6 +129,13 @@ function DependenciesView:_create_dependencies_win()
     end
     self._dependency_usages_tree:render()
   end)
+  self._dependencies_win:map('n', { 'i' }, function()
+    local current_node = self._dependencies_tree:get_node()
+    if current_node == nil then
+      return
+    end
+    self:_show_dependency_detials(current_node)
+  end, { nowait = true })
   ---Setup the filter
   self._dependencies_win:map('n', { '/', 's' }, function()
     self:_toggle_filter()
@@ -168,8 +179,9 @@ function DependenciesView:_create_dependencies_tree()
       local icon_highlight = node.has_conflict and highlights.WARN or highlights.SPECIAL
       line:append(icon .. ' ', icon_highlight)
       line:append(node.text)
-      if node.scope then
-        line:append(' (' .. node.scope .. ')', highlights.COMMENT)
+      if #node.scopes ~= 0 then
+        local scope_text = #node.scopes == 1 and 'scope' or 'scopes'
+        line:append(' (' .. #node.scopes .. ' ' .. scope_text .. ')', highlights.COMMENT)
       end
       if self._dependencies_win.winid then
         local width = vim.api.nvim_win_get_width(self._dependencies_win.winid) - line:width()
@@ -190,6 +202,10 @@ function DependenciesView:_create_dependencies_tree_nodes()
     if nodes_indexes[name] == nil then
       local node = create_tree_node(dependency)
       nodes_indexes[name] = node
+    elseif
+      dependency.scope and not vim.tbl_contains(nodes_indexes[name].scopes, dependency.scope)
+    then
+      table.insert(nodes_indexes[name].scopes, dependency.scope)
     end
     if dependency.conflict_version then
       nodes_indexes[name].has_conflict = true
@@ -253,7 +269,7 @@ function DependenciesView:_create_dependency_usages_tree()
       end
       local icon = MavenConfig.options.icons.package
       local icon_highlight = highlights.SPECIAL
-      if node.has_conflict and not node:has_children() then
+      if node.conflict_version and not node:has_children() then
         icon_highlight = highlights.WARN
         icon = MavenConfig.options.icons.warning
       end
@@ -263,8 +279,8 @@ function DependenciesView:_create_dependency_usages_tree()
       else
         line:append(node.text)
       end
-      if node.scope then
-        line:append(' (' .. node.scope .. ')', highlights.COMMENT)
+      if #node.scopes ~= 0 then
+        line:append(' (' .. node.scopes[1] .. ')', highlights.COMMENT)
       end
       if node.conflict_version and not node:has_children() then
         line:append(' conflict with ' .. node.conflict_version, highlights.ERROR)
@@ -332,6 +348,51 @@ function DependenciesView:_create_dependency_filter()
   self._dependency_filter:map('n', { '<esc>', 'q' }, function()
     self:_toggle_filter()
   end, { noremap = true, nowait = true })
+end
+
+function DependenciesView:_create_dependency_details()
+  local opts = vim.tbl_deep_extend('force', self._default_opts, {
+    enter = true,
+    relative = 'win',
+    position = '50%',
+    size = MavenConfig.options.dependencies_view.dependency_details_win.size,
+    border = {
+      text = { top = ' Dependency Details ' },
+      style = MavenConfig.options.dependencies_view.dependency_details_win.border.style,
+      padding = MavenConfig.options.dependencies_view.dependency_details_win.border.padding
+        or { 0, 0, 0, 0 },
+    },
+    zindex = 60,
+  })
+  self._dependency_details_win = Popup(opts)
+  self._dependency_details_win:on(event.BufLeave, function()
+    self._dependency_details_win:unmount()
+  end)
+  self._dependency_details_win:map('n', { '<esc>', 'q' }, function()
+    self._dependency_details_win:unmount()
+  end)
+end
+
+---Show the dependency info
+function DependenciesView:_show_dependency_detials(node)
+  self:_create_dependency_details()
+  local properties = {
+    { key = 'Group: ', value = node.group_id },
+    { key = 'Artifact: ', value = node.artifact_id },
+    { key = 'Version: ', value = node.version },
+    { key = 'Size: ', value = Utils.humanize_size(node.size) },
+    { key = 'Scopes: ', value = #node.scopes ~= 0 and table.concat(node.scopes, ' ') or nil },
+  }
+  self._dependency_details_win:mount()
+  for index, property in ipairs(properties) do
+    local line = NuiLine()
+    line:append(string.format(' %14s', property.key), highlights.SPECIAL)
+    line:append(' -> ', highlights.COMMENT)
+    line:append(property.value or '-')
+    line:render(self._dependency_details_win.bufnr, MavenConfig.namespace, index)
+  end
+  vim.api.nvim_set_option_value('modifiable', false, { buf = self._dependency_details_win.bufnr })
+  vim.api.nvim_set_option_value('readonly', true, { buf = self._dependency_details_win.bufnr })
 end
 
 ---@private Create the component layout
