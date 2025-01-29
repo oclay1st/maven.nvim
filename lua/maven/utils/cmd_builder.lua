@@ -127,6 +127,8 @@ CommandBuilder.create_project = function(
   return {
     cmd = MavenConfig.options.mvn_executable,
     args = {
+      '-B',
+      '-N',
       'archetype:generate',
       '-DartifactId=' .. project_name,
       '-DgroupId=' .. project_package,

@@ -107,14 +107,14 @@ function M.execute_command(command, args, show_output, callback, cwd)
     on_stdout = function(_, data)
       if show_output then
         vim.schedule(function()
-          append_line(data)
+          append_line(data or '')
         end)
       end
     end,
     on_stderr = function(_, data)
       if show_output then
         vim.schedule(function()
-          append_line(data)
+          append_line(data or '')
         end)
       end
     end,
