@@ -73,7 +73,7 @@ function InitializerView:_create_project_name_component()
       },
     }),
     {
-      prompt = '> ',
+      prompt = Text(' ', highlights.SPECIAL),
       on_change = function(value)
         self._project_name = value
       end,
@@ -113,7 +113,7 @@ function InitializerView:_create_project_package_component()
     }),
     {
       default_value = MavenConfig.options.initializer_view.project_package_win.default_value or '',
-      prompt = '> ',
+      prompt = Text(' ', highlights.SPECIAL),
       on_change = function(value)
         self._project_package = value
       end,
@@ -192,7 +192,7 @@ function InitializerView:_create_archetype_version_component()
       size = { height = #self._archetype.versions },
     }))
     local nodes = vim.tbl_map(function(version)
-      return Tree.Node({ text = version })
+      return Tree.Node({ id = Utils.uuid(), text = version })
     end, self._archetype.versions)
     options_tree:set_nodes(nodes)
     options_tree:render()

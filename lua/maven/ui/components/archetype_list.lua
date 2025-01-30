@@ -152,7 +152,7 @@ function ArchetypeList:_create_input_component()
       },
     }),
     {
-      prompt = '> ',
+      prompt = Text(' ', highlights.SPECIAL),
       on_change = function(query)
         self:_on_input_change(query)
       end,
