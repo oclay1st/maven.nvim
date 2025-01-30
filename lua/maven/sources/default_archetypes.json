@@ -138,8 +138,7 @@
       "32.0.0.Final",
       "31.0.0.Final",
       "30.0.1.Final",
-      "30.0.0.Final",
-      "34.0.0.Final"
+      "30.0.0.Final"
     ],
     "description": "An archetype that generates a starter Jakarta EE project for the WildFly application server."
   }
