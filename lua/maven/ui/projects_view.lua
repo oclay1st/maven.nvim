@@ -468,11 +468,21 @@ function ProjectView:_setup_win_maps()
     local dependencies_node = self._tree:get_node('-' .. project.id .. '-dependencies')
     assert(dependencies_node, "Dependencies node doesn't exist on project: " .. project.root_path)
     if dependencies_node.is_loaded then
-      local dependency_view = DependenciesView.new(project.name, project.dependencies)
+      local dependency_view = DependenciesView.new(
+        project.name,
+        project.artifact_id,
+        project.version,
+        project.dependencies
+      )
       dependency_view:mount()
     else
       self:_load_dependencies_nodes(dependencies_node, project, false, function()
-        local dependency_view = DependenciesView.new(project.name, project.dependencies)
+        local dependency_view = DependenciesView.new(
+          project.name,
+          project.artifact_id,
+          project.version,
+          project.dependencies
+        )
         dependency_view:mount()
       end)
     end

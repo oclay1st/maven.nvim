@@ -16,6 +16,8 @@ local Utils = require('maven.utils')
 ---@field private _dependency_usages_win NuiPopup
 ---@field private _dependency_usages_tree NuiTree
 ---@field private _dependency_filter NuiInput
+---@field private _dependencies_header NuiLine
+---@field private _dependency_usages_header NuiLine
 ---@field private _dependency_details_win NuiPopup
 ---@field private _layout NuiLayout
 ---@field private _default_opts table
@@ -24,13 +26,17 @@ local Utils = require('maven.utils')
 ---@field private _filter_value string
 ---@field dependencies Project.Dependency[]
 ---@field project_name string
+---@field project_artifact_id string
+---@field project_version string
 local DependenciesView = {}
 
 DependenciesView.__index = DependenciesView
 
-function DependenciesView.new(project_name, dependencies)
+function DependenciesView.new(project_name, project_artifact_id, project_version, dependencies)
   return setmetatable({
     project_name = project_name,
+    project_artifact_id = project_artifact_id,
+    project_version = project_version,
     dependencies = dependencies,
     _default_opts = {
       ns_id = MavenConfig.namespace,
@@ -113,12 +119,12 @@ function DependenciesView:_create_dependencies_win()
     indexed_dependencies[item.id] = item
   end
   self._dependencies_win:on(event.CursorMoved, function()
-    local current_node = self._dependencies_tree:get_node()
-    if current_node == nil then
-      return
-    end
-    local filtered_dependencies = filter_dependencies(current_node.name, indexed_dependencies)
     self._dependency_usages_tree:set_nodes({})
+    local filtered_dependencies = self.dependencies
+    local current_node = self._dependencies_tree:get_node()
+    if current_node then
+      filtered_dependencies = filter_dependencies(current_node.name, indexed_dependencies)
+    end
     for _, dependency in pairs(filtered_dependencies) do
       local parent_id = dependency.parent_id and '-' .. dependency.parent_id or nil
       local node = create_tree_node(dependency)
@@ -127,7 +133,12 @@ function DependenciesView:_create_dependencies_win()
         self._dependency_usages_tree:get_node(parent_id):expand()
       end
     end
-    self._dependency_usages_tree:render()
+    self._dependency_usages_tree:render(2)
+    self._dependency_usages_header:highlight(
+      self._dependency_usages_win.bufnr,
+      MavenConfig.namespace,
+      1
+    )
   end)
   self._dependencies_win:map('n', { 'i' }, function()
     local current_node = self._dependencies_tree:get_node()
@@ -143,27 +154,28 @@ function DependenciesView:_create_dependencies_win()
   self._dependencies_win:map('n', { '<c-l>', '<c-s>' }, function()
     vim.api.nvim_set_current_win(self._dependency_usages_win.winid)
   end, { nowait = true })
+  self._dependencies_win:map('n', { 'os' }, function()
+    self:_sort_dependencies_by_size()
+  end, { noremap = true, nowait = true })
+  self._dependencies_win:map('n', { 'on' }, function()
+    self:_sort_dependencies_by_name()
+  end, { noremap = true, nowait = true })
 end
 
----@private Toggle filter
-function DependenciesView:_toggle_filter()
-  if self._is_filter_visible then
-    self._dependency_filter:hide()
-    if self._filter_value == '' then
-      self._dependencies_win.border:set_text('bottom')
-    else
-      self._dependencies_win.border:set_text(
-        'bottom',
-        Text(' Filtered by: "' .. self._filter_value .. '" ', highlights.COMMENT),
-        'left'
-      )
-    end
-    vim.cmd('stopinsert')
-  else
-    self._dependency_filter:show()
-    vim.cmd('startinsert!')
-  end
-  self._is_filter_visible = not self._is_filter_visible
+---@private Create the dependencies header
+function DependenciesView:_create_dependencies_header()
+  local header = NuiLine()
+  header:append(' ' .. MavenConfig.options.icons.maven .. ' ', highlights.SPECIAL)
+  header:append(self.project_artifact_id .. ':' .. self.project_version .. ' ', highlights.BOLD)
+  header:append('(' .. self.project_name .. ')', highlights.COMMENT)
+  local spaces = vim.api.nvim_win_get_width(self._dependencies_win.winid) - header:width()
+  header:append(string.format('%' .. spaces .. 's  ', 'Size '), highlights.BOLD)
+  vim.api.nvim_set_option_value('modifiable', true, { buf = self._dependencies_win.bufnr })
+  vim.api.nvim_set_option_value('readonly', false, { buf = self._dependencies_win.bufnr })
+  header:render(self._dependencies_win.bufnr, MavenConfig.namespace, 1)
+  vim.api.nvim_set_option_value('modifiable', false, { buf = self._dependencies_win.bufnr })
+  vim.api.nvim_set_option_value('readonly', true, { buf = self._dependencies_win.bufnr })
+  self._dependencies_header = header
 end
 
 ---@private Create the dependencies tree
@@ -179,7 +191,9 @@ function DependenciesView:_create_dependencies_tree()
       local icon_highlight = node.has_conflict and highlights.WARN or highlights.SPECIAL
       line:append(icon .. ' ', icon_highlight)
       line:append(node.text)
-      if #node.scopes ~= 0 then
+      if #node.scopes == 1 then
+        line:append(' (' .. node.scopes[1] .. ')', highlights.COMMENT)
+      elseif #node.scopes > 1 then
         local scope_text = #node.scopes == 1 and 'scope' or 'scopes'
         line:append(' (' .. #node.scopes .. ' ' .. scope_text .. ')', highlights.COMMENT)
       end
@@ -191,7 +205,9 @@ function DependenciesView:_create_dependencies_tree()
       return line
     end,
   })
-  self:_create_dependencies_tree_nodes()
+  local nodes = self:_create_dependencies_tree_nodes()
+  self._dependencies_tree:set_nodes(nodes)
+  self._dependencies_tree:render(2)
 end
 
 ---@private Create the node list of dependencies
@@ -216,7 +232,53 @@ function DependenciesView:_create_dependencies_tree_nodes()
   end
   local nodes = vim.tbl_values(nodes_indexes)
   table.sort(nodes, function(a, b)
-    return string.lower(a.text) < string.lower(b.text)
+    return string.lower(a.artifact_id) < string.lower(b.artifact_id)
+  end)
+  return nodes
+end
+
+---@private Toggle filter
+function DependenciesView:_toggle_filter()
+  if self._is_filter_visible then
+    self._dependency_filter:hide()
+    if self._filter_value == '' then
+      self._dependencies_win.border:set_text('bottom')
+    else
+      self._dependencies_win.border:set_text(
+        'bottom',
+        Text(' Filtered by: "' .. self._filter_value .. '" ', highlights.COMMENT),
+        'left'
+      )
+    end
+    vim.cmd('stopinsert')
+  else
+    self._dependency_filter:show()
+    vim.cmd('startinsert!')
+  end
+  self._is_filter_visible = not self._is_filter_visible
+end
+
+---@private Sort the dependencies by size
+function DependenciesView:_sort_dependencies_by_size()
+  local nodes = self._dependencies_tree:get_nodes()
+  table.sort(nodes, function(first_node, b)
+    if first_node.size == nil then
+      return false
+    end
+    if b.size == nil then
+      return false
+    end
+    return first_node.size > b.size
+  end)
+  self._dependencies_tree:set_nodes(nodes)
+  self._dependencies_tree:render()
+end
+
+---@private Sort the dependencies by size
+function DependenciesView:_sort_dependencies_by_name()
+  local nodes = self._dependencies_tree:get_nodes()
+  table.sort(nodes, function(a, b)
+    return string.lower(a.artifact_id) < string.lower(b.artifact_id)
   end)
   self._dependencies_tree:set_nodes(nodes)
   self._dependencies_tree:render()
@@ -288,6 +350,20 @@ function DependenciesView:_create_dependency_usages_tree()
       return line
     end,
   })
+end
+
+---@private Create the dependency usages header
+function DependenciesView:_create_dependency_usages_header()
+  local header = NuiLine()
+  header:append(' ' .. MavenConfig.options.icons.maven .. ' ', highlights.SPECIAL)
+  header:append(self.project_artifact_id .. ':' .. self.project_version .. ' ', highlights.BOLD)
+  header:append('(' .. self.project_name .. ')', highlights.COMMENT)
+  vim.api.nvim_set_option_value('modifiable', true, { buf = self._dependency_usages_win.bufnr })
+  vim.api.nvim_set_option_value('readonly', false, { buf = self._dependency_usages_win.bufnr })
+  header:render(self._dependency_usages_win.bufnr, MavenConfig.namespace, 1)
+  vim.api.nvim_set_option_value('modifiable', false, { buf = self._dependency_usages_win.bufnr })
+  vim.api.nvim_set_option_value('readonly', true, { buf = self._dependency_usages_win.bufnr })
+  self._dependency_usages_header = header
 end
 
 ---@private React on filter change
@@ -440,10 +516,15 @@ function DependenciesView:mount()
   self:_create_dependency_usages_win()
   ---Setup the layout
   self:_create_layout()
+  ---Mount the layout
   self._layout:mount()
-  ---Setup the dependency filter
+  ---Setup the dependencies header after the layout get mount
+  self:_create_dependencies_header()
+  ---Setup the dependency usages header after the layout get mount
+  self:_create_dependency_usages_header()
+  ---Setup the dependency filter after the layout get mount
   self:_create_dependency_filter()
-  --- Render the dependencies tree to show the size
+  ---Render the dependencies tree to show the size
   self._dependencies_tree:render()
 end
 

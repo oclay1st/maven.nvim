@@ -5,6 +5,7 @@ M.CURSOR_LINE = 'MavenCursorLine'
 M.SPECIAL = 'MavenSpecial'
 M.COMMENT = 'MavenComment'
 M.TITLE = 'MavenTitle'
+M.BOLD = 'MavenBold'
 M.INFO = 'MavenInfo'
 M.WARN = 'MavenWarn'
 M.ERROR = 'MavenError'
@@ -18,6 +19,10 @@ local highlights = {
   {
     name = M.NORMAL_FLOAT,
     config = { default = true, link = 'NormalFloat' },
+  },
+  {
+    name = M.BOLD,
+    config = { default = true, link = 'Bold' },
   },
   {
     name = M.CURSOR_LINE,
