@@ -261,14 +261,14 @@ end
 ---@private Sort the dependencies by size
 function DependenciesView:_sort_dependencies_by_size()
   local nodes = self._dependencies_tree:get_nodes()
-  table.sort(nodes, function(first_node, b)
-    if first_node.size == nil then
+  table.sort(nodes, function(a, b)
+    if a.size == nil then
       return false
     end
     if b.size == nil then
-      return false
+      return true
     end
-    return first_node.size > b.size
+    return a.size > b.size
   end)
   self._dependencies_tree:set_nodes(nodes)
   self._dependencies_tree:render()
