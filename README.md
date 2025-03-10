@@ -7,16 +7,14 @@
 
 **maven.nvim** is a plugin to use Maven in Neovim.
 
-<table>
-  <tr>
-    <td> <img src="assets/console.png"  alt="1" width = 360px></td>
-    <td><img src="assets/dependencies.png" alt="2" width = 360px></td>
-   </tr> 
-   <tr>
-      <td><img src="assets/archetypes.png" alt="3" width = 360px></td>
-      <td><img src="assets/commands.png" align="right" alt="4" width = 360px>
-  </td>
-  </tr>
+<p align="center">
+    <img src="assets/console.png"  alt="1" width="45%">
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <img src="assets/dependencies.png" alt="2" width="45%">
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <img src="assets/archetypes.png" alt="3" width="45%">
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <img src="assets/commands.png" alt="4" width="45%">
 </table>
 
 ## ✨ Features
