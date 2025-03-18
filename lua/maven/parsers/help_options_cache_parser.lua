@@ -29,6 +29,11 @@ M.dump = function(options)
       help_options_json:parent():mkdir({ parents = true })
   end
 
+  if not help_options_json:exists() then
+      help_options_json:touch({ recursive = true })
+  end
+
+
   help_options_json:write(options_text, 'w')
 end
 
