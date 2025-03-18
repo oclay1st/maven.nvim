@@ -12,6 +12,7 @@ local M = {}
 M.parse = function()
   --- @type Path
   local help_options_json = Path:new(Utils.maven_cache_path, 'help_options.json')
+  print("Cache Path: " .. Utils.maven_cache_path)
   if help_options_json:exists() then
     local data = help_options_json:read()
     return vim.json.decode(data)
