@@ -12,7 +12,6 @@ local M = {}
 M.parse = function()
   --- @type Path
   local help_options_json = Path:new(Utils.maven_cache_path, 'help_options.json')
-  print("Cache Path: " .. Utils.maven_cache_path)
   if help_options_json:exists() then
     local data = help_options_json:read()
     return vim.json.decode(data)
@@ -26,12 +25,10 @@ M.dump = function(options)
   local options_text = vim.json.encode(options)
   local help_options_json = Path:new(Utils.maven_cache_path, 'help_options.json')
 
-  print("Cache Path: " .. Utils.maven_cache_path)
 
   local parent_path = help_options_json:parent()
     if not parent_path:exists() then
       parent_path:mkdir({ parents = true })
-      print("Created directory: " .. tostring(parent_path))
   end
 
   if not help_options_json:exists() then
