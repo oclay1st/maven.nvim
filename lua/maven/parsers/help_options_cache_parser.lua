@@ -25,8 +25,8 @@ M.dump = function(options)
   local options_text = vim.json.encode(options)
   local help_options_json = Path:new(Utils.maven_cache_path, 'help_options.json')
 
-  if not help_options_json:exists() then
-      help_options_json:mkdir({ parents = true })
+  if not help_options_json:parent():exists() then
+      help_options_json:parent():mkdir({ parents = true })
   end
 
   help_options_json:write(options_text, 'w')
