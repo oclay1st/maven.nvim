@@ -57,7 +57,7 @@
 
 ```lua
 {
-  mvn_executable = 'mvn', -- Example: mvn, ./mvnw or a path to Maven executable
+  mvn_executable = 'mvn', -- Example: mvn, ./mvnw or a path to Maven executable, if you are on windows use mvn.cmd
   project_scanner_depth = 5,
   console = {
     show_command_execution = true,
