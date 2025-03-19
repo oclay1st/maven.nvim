@@ -45,7 +45,6 @@ M.get_plugin_root_dir = function()
   if dir_path == nil then
     return nil
   end
-
   return dir_path .. '..'
 end
 
