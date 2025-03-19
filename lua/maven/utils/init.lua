@@ -35,18 +35,18 @@ M.local_central_catalog_path =
   Path:new(M.maven_local_repository_path, 'archetype-catalog-central.xml')
 
 M.get_plugin_root_dir = function()
-    local source = debug.getinfo(1).source
+  local source = debug.getinfo(1).source
 
-    if jit and jit.os and string.lower(jit.os) == 'windows' then
-        source = source:gsub('/', '\\')
-    end
+  if jit and jit.os and string.lower(jit.os) == 'windows' then
+    source = source:gsub('/', '\\')
+  end
 
-    local dir_path = source:match('@(.*/)') or source:match('@(.*\\)')
-    if dir_path == nil then
-        return nil
-    end
+  local dir_path = source:match('@(.*/)') or source:match('@(.*\\)')
+  if dir_path == nil then
+    return nil
+  end
 
-    return dir_path .. '..'
+  return dir_path .. '..'
 end
 
 M.humanize_size = function(size)
