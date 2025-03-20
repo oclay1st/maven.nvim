@@ -36,6 +36,11 @@ M.local_central_catalog_path =
 
 M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
+
+  if jit and jit.os and string.lower(jit.os) == 'windows' then
+    source = source:gsub('/', '\\')
+  end
+
   local dir_path = source:match('@(.*/)') or source:match('@(.*\\)')
   if dir_path == nil then
     return nil
