@@ -20,8 +20,7 @@ local console = require('maven.utils.console')
 
 local uv = vim.loop
 
-local pom_xml_file_pattern = "[\\/]+pom%.xml$"
-
+local pom_xml_file_pattern = '[\\/]+pom%.xml$'
 
 local M = {}
 
