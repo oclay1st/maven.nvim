@@ -146,13 +146,11 @@ function M.execute_command(command, args, show_output, callback, cwd)
       end
     end,
   })
+
   if callback then
     job:after_success(function(j, code, signal)
       callback(Utils.SUCCEED_STATE, j, code, signal)
     end)
-  end
-
-  if callback then
     job:after_failure(function(j, code, signal)
       callback(Utils.FAILED_STATE, j, code, signal)
     end)
