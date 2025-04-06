@@ -168,13 +168,8 @@ end
 ---Add size
 ---@param dependency Project.Dependency
 M.set_dependency_size = function(dependency)
-  local jar_file_path = Path:new(
-    Utils.maven_local_repository_path,
-    string.gsub(dependency.group_id, '%.', Path.path.sep),
-    dependency.artifact_id,
-    dependency.version,
-    dependency.artifact_id .. '-' .. dependency.version .. '.jar'
-  ):absolute()
+  local jar_file_path =
+    Utils.get_jar_file_path(dependency.group_id, dependency.artifact_id, dependency.version)
   local stat = uv.fs_stat(jar_file_path) or {}
   dependency.size = stat.size
 end
@@ -250,13 +245,7 @@ M.load_project_plugin_details = function(group_id, artifact_id, version, callbac
     end
     callback(state, plugin)
   end
-  local jar_file_path = Path:new(
-    Utils.maven_local_repository_path,
-    string.gsub(group_id, '%.', Path.path.sep),
-    artifact_id,
-    version,
-    artifact_id .. '-' .. version .. '.jar'
-  ):absolute()
+  local jar_file_path = Utils.get_jar_file_path(group_id, artifact_id, version)
   local command = CommandBuilder.build_read_zip_file_cmd(jar_file_path, Utils.maven_plugin_xml_path)
   console.execute_command(command.cmd, command.args, false, _callback)
 end

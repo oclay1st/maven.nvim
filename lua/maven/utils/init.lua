@@ -62,4 +62,14 @@ M.humanize_size = function(size)
   return string.format('%.2f %s', size, units[unit_index])
 end
 
+M.get_jar_file_path = function(group_id, artifact_id, version)
+  return Path:new(
+    M.maven_local_repository_path,
+    group_id:gsub('%.', Path.path.sep),
+    artifact_id,
+    version,
+    artifact_id .. '-' .. version .. '.jar'
+  ):absolute()
+end
+
 return M
