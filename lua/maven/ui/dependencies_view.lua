@@ -145,7 +145,7 @@ function DependenciesView:_create_dependencies_win()
     if current_node == nil then
       return
     end
-    self:_show_dependency_detials(current_node)
+    self:_show_dependency_details(current_node)
   end, { nowait = true })
   ---Setup the filter
   self._dependencies_win:map('n', { '/', 's' }, function()
@@ -450,7 +450,7 @@ function DependenciesView:_create_dependency_details()
 end
 
 ---Show the dependency info
-function DependenciesView:_show_dependency_detials(node)
+function DependenciesView:_show_dependency_details(node)
   self:_create_dependency_details()
   local properties = {
     { key = 'Group: ', value = node.group_id },

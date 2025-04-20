@@ -7,7 +7,7 @@ local Utils = require('maven.utils')
 
 local M = {}
 
---- Parse the help opions cache
+--- Parse the help options cache
 --- @return HelpOptionCache[]
 M.parse = function()
   --- @type Path
