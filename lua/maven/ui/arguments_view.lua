@@ -47,7 +47,7 @@ function ArgumentView.new()
       },
     },
     _prev_win = vim.api.nvim_get_current_win(),
-    _input_prompt = Text(MavenConfig.options.icons.search .. ' Search ', highlights.SPECIAL),
+    _input_prompt = Text(MavenConfig.options.icons.search .. ' ', highlights.SPECIAL),
   }, ArgumentView)
 end
 
@@ -56,7 +56,7 @@ local function create_option_node(option)
     arg = option.arg,
     value = option.value,
     enabled = option.enabled,
-    text = option.arg .. '=' .. option.value,
+    text = option.arg .. (option.value and '=' .. option.value or ''),
   })
 end
 
@@ -123,7 +123,7 @@ function ArgumentView:_on_input_change(query)
       if
         query == ''
         or string.match(options[i].arg, query)
-        or string.match(options[i].value, query)
+        or (options[i].value and string.match(options[i].value, query))
       then
         local node = create_option_node(options[i])
         table.insert(nodes, node)
@@ -194,7 +194,7 @@ function ArgumentView:_create_options_component()
     },
   }))
   self:_create_options_tree_list()
-  self._options_component:map('n', '<enter>', function()
+  self._options_component:map('n', { '<enter>', '<space>' }, function()
     local current_node = self._options_tree:get_node()
 
     if not current_node or current_node.type == 'loading' then
