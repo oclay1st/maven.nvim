@@ -14,6 +14,7 @@ local ArchetypeJsonParser = require('maven.parsers.archetype_json_parser')
 local ProjectsCacheParser = require('maven.parsers.projects_cache_parser')
 local PluginsCacheParser = require('maven.parsers.plugins_cache_parser')
 local HelpOptionsCacheParser = require('maven.parsers.help_options_cache_parser')
+local FavoritesCacheParser = require('maven.parsers.favorites_cache_parser')
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Utils = require('maven.utils')
 local console = require('maven.utils.console')
@@ -37,6 +38,17 @@ local function sort_projects(projects)
   for _, project in ipairs(projects) do
     if #project.modules ~= 0 then
       sort_projects(project.modules)
+    end
+  end
+end
+
+---Load the favorites commands for all the projects
+---@param projects Project[]
+local function load_projects_favorites(projects)
+  for _, project in ipairs(projects) do
+    M.load_favorite_commands_cache(project)
+    if #project.modules ~= 0 then
+      load_projects_favorites(project.modules)
     end
   end
 end
@@ -86,6 +98,7 @@ M.scan_projects = function(base_path, callback)
     end,
     on_exit = function()
       sort_projects(projects)
+      load_projects_favorites(projects)
       callback(projects)
     end,
   })
@@ -111,23 +124,25 @@ M.load_project_dependencies = function(pom_xml_path, force, callback)
   local output_filename = Utils.uuid() .. '.txt'
   local show_output = MavenConfig.options.console.show_dependencies_load_execution
   local _callback = function(state)
-    local dependencies
-    if state == Utils.SUCCEED_STATE then
-      local dependency_tree_path = Path:new(output_dir, output_filename)
-      dependencies = DependencyTreeParser.parse_file(dependency_tree_path:absolute())
-      for _, dependency in ipairs(dependencies) do
-        M.set_dependency_size(dependency)
+    vim.schedule(function()
+      local dependencies
+      if state == Utils.SUCCEED_STATE then
+        local dependency_tree_path = Path:new(output_dir, output_filename)
+        dependencies = DependencyTreeParser.parse_file(dependency_tree_path:absolute())
+        for _, dependency in ipairs(dependencies) do
+          M.set_dependency_size(dependency)
+        end
+        M.create_dependencies_cache(pom_xml_path, dependencies)
+        dependency_tree_path:rm()
+      elseif state == Utils.FAILED_STATE then
+        local error_msg = 'Error loading dependencies. '
+        if not show_output then
+          error_msg = error_msg .. 'Enable the console output for more details.'
+        end
+        vim.notify(error_msg, vim.log.levels.ERROR)
       end
-      M.create_dependencies_cache(pom_xml_path, dependencies)
-      dependency_tree_path:rm()
-    elseif state == Utils.FAILED_STATE then
-      local error_msg = 'Error loading dependencies. '
-      if not show_output then
-        error_msg = error_msg .. 'Enable the console output for more details.'
-      end
-      vim.notify(error_msg, vim.log.levels.ERROR)
-    end
-    callback(state, dependencies)
+      callback(state, dependencies)
+    end)
   end
   local command =
     CommandBuilder.build_mvn_dependencies_cmd(pom_xml_path, output_dir, output_filename)
@@ -184,27 +199,29 @@ M.load_project_plugins = function(pom_xml_path, force, callback)
   local absolute_file_path = file_path:absolute()
   local show_output = MavenConfig.options.console.show_plugins_load_execution
   local _callback = function(state)
-    local plugins
-    if state == Utils.SUCCEED_STATE then
-      local epom = EffectivePomParser.parse_file(absolute_file_path)
-      file_path:rm()
-      -- map to a plugin list
-      plugins = vim.tbl_map(function(item)
-        return Project.Plugin(item.group_id, item.artifact_id, item.version)
-      end, epom.plugins)
-      -- sort the plugin list
-      table.sort(plugins, function(a, b)
-        return string.lower(a:get_short_name()) < string.lower(b:get_short_name())
-      end)
-      M.create_plugins_cache(pom_xml_path, plugins)
-    elseif state == Utils.FAILED_STATE then
-      local error_msg = 'Error loading plugins. '
-      if not show_output then
-        error_msg = error_msg .. 'Enable the console output for more details.'
+    vim.schedule(function()
+      local plugins
+      if state == Utils.SUCCEED_STATE then
+        local epom = EffectivePomParser.parse_file(absolute_file_path)
+        file_path:rm()
+        -- map to a plugin list
+        plugins = vim.tbl_map(function(item)
+          return Project.Plugin(item.group_id, item.artifact_id, item.version)
+        end, epom.plugins)
+        -- sort the plugin list
+        table.sort(plugins, function(a, b)
+          return string.lower(a:get_short_name()) < string.lower(b:get_short_name())
+        end)
+        M.create_plugins_cache(pom_xml_path, plugins)
+      elseif state == Utils.FAILED_STATE then
+        local error_msg = 'Error loading plugins. '
+        if not show_output then
+          error_msg = error_msg .. 'Enable the console output for more details.'
+        end
+        vim.notify(error_msg, vim.log.levels.ERROR)
       end
-      vim.notify(error_msg, vim.log.levels.ERROR)
-    end
-    callback(state, plugins)
+      callback(state, plugins)
+    end)
   end
   local command = CommandBuilder.build_mvn_effective_pom_cmd(pom_xml_path, absolute_file_path)
   console.execute_command(command.cmd, command.args, show_output, _callback)
@@ -234,18 +251,21 @@ M.create_plugins_cache = function(pom_xml_path, plugins)
   PluginsCacheParser.dump(key, plugins)
 end
 
-M.load_project_plugin_details = function(group_id, artifact_id, version, callback)
+M.load_project_plugin_details = function(plugin, callback)
   local _callback = function(state, job)
-    local plugin
-    if state == Utils.SUCCEED_STATE then
-      local xml_content = table.concat(job:result(), ' ')
-      plugin = PluginXmlParser.parse(xml_content)
-    elseif state == Utils.FAILED_STATE then
-      vim.notify('Error loading plugin details.', vim.log.levels.ERROR)
-    end
-    callback(state, plugin)
+    vim.schedule(function()
+      local _plugin
+      if state == Utils.SUCCEED_STATE then
+        local xml_content = table.concat(job:result(), ' ')
+        _plugin = PluginXmlParser.parse(xml_content)
+      elseif state == Utils.FAILED_STATE then
+        vim.notify('Error loading plugin details.', vim.log.levels.ERROR)
+      end
+      callback(state, _plugin)
+    end)
   end
-  local jar_file_path = Utils.get_jar_file_path(group_id, artifact_id, version)
+
+  local jar_file_path = Utils.get_jar_file_path(plugin.group_id, plugin.artifact_id, plugin.version)
   local command = CommandBuilder.build_read_zip_file_cmd(jar_file_path, Utils.maven_plugin_xml_path)
   console.execute_command(command.cmd, command.args, false, _callback)
 end
@@ -255,15 +275,17 @@ M.load_help_options = function(force, callback)
     return
   end
   local _callback = function(state, job)
-    local help_options
-    if state == Utils.SUCCEED_STATE then
-      local output_lines = job:result()
-      help_options = HelpOptionsParser.parse(output_lines)
-      M.create_help_options_cache(help_options)
-    elseif state == Utils.FAILED_STATE then
-      vim.notify('Error loading help options.', vim.log.levels.ERROR)
-    end
-    callback(state, help_options)
+    vim.schedule(function()
+      local help_options
+      if state == Utils.SUCCEED_STATE then
+        local output_lines = job:result()
+        help_options = HelpOptionsParser.parse(output_lines)
+        M.create_help_options_cache(help_options)
+      elseif state == Utils.FAILED_STATE then
+        vim.notify('Error loading help options.', vim.log.levels.ERROR)
+      end
+      callback(state, help_options)
+    end)
   end
   local command = CommandBuilder.build_mvn_help_cmd()
   console.execute_command(command.cmd, command.args, false, _callback)
@@ -314,7 +336,9 @@ M.load_archetype_catalog = function(callback)
         end)
       end,
       on_error = function(message)
-        vim.notify(message, vim.log.levels.ERROR)
+        vim.schedule(function()
+          vim.notify(message, vim.log.levels.ERROR)
+        end)
       end,
     })
   end
@@ -324,6 +348,45 @@ M.load_default_archetype_catalog = function()
   ---@type  Path
   local catalog_path = Path:new(Utils.get_plugin_root_dir(), 'sources', 'default_archetypes.json')
   return ArchetypeJsonParser:parse_file(catalog_path:absolute())
+end
+
+---Add command ton favorites
+---@param favorite Project.Favorite
+---@param project Project
+M.add_favorite_command = function(favorite, project)
+  project:add_favorite(favorite)
+  M.update_favorite_commands_cache(project.pom_xml_path, project.favorites)
+end
+
+--- Remove command from favorites
+---@param favorite Project.Favorite
+---@param project Project
+M.remove_favorite_command = function(favorite, project)
+  project:remove_favorite(favorite)
+  M.update_favorite_commands_cache(project.pom_xml_path, project.favorites)
+end
+
+--- Remove command from favorite
+---@param pom_xml_path string
+---@param favorites Project.Favorite[]
+M.update_favorite_commands_cache = function(pom_xml_path, favorites)
+  local project_cache = M.load_project_cache(pom_xml_path)
+  if not project_cache then
+    return false
+  end
+  local key = ProjectsCacheParser.register(pom_xml_path)
+  FavoritesCacheParser.dump(key, favorites)
+end
+
+---Load the favorite project commands from cache
+---@param project Project
+M.load_favorite_commands_cache = function(project)
+  local project_cache = M.load_project_cache(project.pom_xml_path)
+  if not project_cache then
+    return false
+  end
+  local favorite_commands = FavoritesCacheParser.parse(project_cache.key)
+  project.favorites = favorite_commands
 end
 
 M.setup = function()

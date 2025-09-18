@@ -305,7 +305,7 @@ function InitializerView:_create_project()
         )
         if choice == 1 then
           vim.api.nvim_set_current_dir(project_directory:absolute())
-          require('maven').refresh()
+          require('maven').reset_projects_view()
         end
       elseif state == Utils.FAILED_STATE then
         vim.notify('Error creating project: ' .. self._project_name, vim.log.levels.ERROR)

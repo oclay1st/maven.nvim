@@ -18,10 +18,10 @@ local M = {}
 --- Parse the dependencies cache
 M.parse = function(key)
   local dependencies_json = Path:new(Utils.maven_cache_path, 'dependencies', key .. '.json')
+  local dependencies = {}
   if dependencies_json:exists() then
     local data = dependencies_json:read()
     local dependencies_cache = vim.json.decode(data) ---@type DependencyCache[]
-    local dependencies = {}
     for _, item in ipairs(dependencies_cache) do
       table.insert(
         dependencies,
@@ -38,9 +38,8 @@ M.parse = function(key)
         )
       )
     end
-    return dependencies
   end
-  return {}
+  return dependencies
 end
 
 --- Dump the dependencies cache to file

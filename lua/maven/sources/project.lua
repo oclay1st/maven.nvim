@@ -12,8 +12,9 @@ local Utils = require('maven.utils')
 ---@field lifecycles Project.Lifecycle[]
 ---@field dependencies Project.Dependency[]
 ---@field plugins Project.Plugin[]
----@field commands Project.Command[]
+---@field custom_commands Project.CustomCommand[]
 ---@field modules table[string|Project[]]
+---@field favorites Project.Favorite[]
 local Project = {}
 Project.__index = Project
 
@@ -26,7 +27,7 @@ Project.__index = Project
 ---@param name? string
 ---@param dependencies? Project.Dependency[]
 ---@param plugins? Project.Plugin[]
----@param commands? Project.Command[]
+---@param custom_commands? Project.CustomCommand[]
 ---@param modules? Project[]
 ---@return Project
 function Project.new(
@@ -38,7 +39,7 @@ function Project.new(
   name,
   dependencies,
   plugins,
-  commands,
+  custom_commands,
   modules
 )
   return setmetatable({
@@ -52,8 +53,9 @@ function Project.new(
     name = name or artifact_id,
     dependencies = dependencies or {},
     plugins = plugins or {},
-    commands = commands or {},
+    custom_commands = custom_commands or {},
     modules = modules or {},
+    favorites = {},
   }, Project)
 end
 
@@ -105,9 +107,9 @@ function Project:replace_plugin(plugin)
 end
 
 ---Set commands
----@param commands Project.Command[]
+---@param commands Project.CustomCommand[]
 function Project:set_commands(commands)
-  self.commands = commands
+  self.custom_commands = commands
 end
 
 ---@return string
@@ -115,7 +117,7 @@ function Project:get_compact_name()
   return self.group_id .. ':' .. self.artifact_id .. ':' .. self.version
 end
 
----@class Project.Command
+---@class Project.CustomCommand
 ---@field name string
 ---@field description string
 ---@field cmd_args string[]
@@ -134,6 +136,12 @@ function Project.Command(name, description, cmd_args)
   self.description = description
   self.cmd_args = cmd_args
   return self
+end
+
+---Convert to favorite
+---@return Project.Favorite
+function Command:as_favorite()
+  return Project.Favorite(self.name, 'custom_command', self.description, self.cmd_args)
 end
 
 ---@class Project.Lifecycle
@@ -155,6 +163,12 @@ function Project.Lifecycle(name, description, cmd_arg)
   self.description = description
   self.cmd_arg = cmd_arg
   return self
+end
+
+---Convert as favorite
+---@return Project.Favorite
+function Lifecycle:as_favorite()
+  return Project.Favorite(self.name, 'lifecycle', self.description, { self.cmd_arg })
 end
 
 ---@class Project.Dependency
@@ -216,8 +230,7 @@ end
 ---@field group_id string
 ---@field artifact_id string
 ---@field version string
----@field goal_prefix string
----@field goals? Project.Goal[]
+---@field goals Project.Goal[]
 local Plugin = {}
 
 Plugin.__index = Plugin
@@ -249,37 +262,26 @@ function Plugin:get_short_name()
   return name
 end
 
----Add a goal to the list of goals
----@param goal Project.Goal
-function Plugin:add_goal(goal)
-  table.insert(self.goals, goal)
-end
-
----Set goal prefix
----@param goal_prefix string
-function Plugin:set_goal_prefix(goal_prefix)
-  self.goal_prefix = assert(goal_prefix, 'Goal prefix required')
-end
-
 ---@param group_id string
 ---@param artifact_id string
 ---@param version string
----@param goal_prefix? string
 ---@param goals? Project.Goal[]
 ---@return Project.Plugin
-function Project.Plugin(group_id, artifact_id, version, goal_prefix, goals)
+function Project.Plugin(group_id, artifact_id, version, goals)
   local self = {}
   setmetatable(self, Plugin)
   self.group_id = group_id or ''
   self.artifact_id = artifact_id
   self.version = version or ''
-  self.goal_prefix = goal_prefix or ''
   self.goals = goals or {}
   return self
 end
 
 ---@class Project.Goal
 ---@field name string
+---@field prefix string
+---@field cmd_arg string
+---@field full_name string
 local Goal = {}
 
 Goal.__index = Goal
@@ -287,12 +289,71 @@ Goal.__index = Goal
 ---@alias Goal Project.Goal
 
 ---@param name string
+---@param prefix string
 ---@return  Project.Goal
-function Project.Goal(name) --- it could grow
+function Project.Goal(name, prefix) --- it could grow
   local self = {}
   setmetatable(self, Goal)
-  self.name = name
+  self.name = assert(name, 'Goal name required')
+  self.prefix = assert(prefix, 'Goal prefix required')
+  self.full_name = prefix .. ':' .. name
+  self.cmd_arg = prefix .. ':' .. name
   return self
+end
+
+---Convert as favorite
+---@return Project.Favorite
+function Goal:as_favorite()
+  return Project.Favorite(self.full_name, 'goal', nil, { self.cmd_arg })
+end
+
+---@class Project.Favorite
+---@field name string
+---@field type string
+---@field description string
+---@field cmd_args string[]
+local Favorite = {}
+
+Favorite.__index = Favorite
+
+---@alias Favorite Project.Favorite
+
+---@param name string
+---@param type string
+---@param description? string
+---@param cmd_args string[]
+---@return  Project.Favorite
+function Project.Favorite(name, type, description, cmd_args) --- it could grow
+  local self = {}
+  setmetatable(self, Goal)
+  self.name = assert(name, 'Favorite command name required')
+  self.type = assert(type, 'Favorite command type required')
+  self.description = description
+  self.cmd_args = assert(cmd_args, 'Favorite command args required')
+  return self
+end
+
+---Add to favorite commands
+---@param favorite Project.Favorite
+function Project:add_favorite(favorite)
+  table.insert(self.favorites, favorite)
+end
+
+---Remove from favorite commands
+---@param favorite Project.Favorite
+function Project:remove_favorite(favorite)
+  for index, item in ipairs(self.favorites) do
+    if item.name == favorite.name and item.type == favorite.type then
+      table.remove(self.favorites, index)
+      return
+    end
+  end
+end
+
+function Project:has_favorite_command(name, type)
+  return vim.tbl_contains(self.favorites, function(item)
+    return item.name == name and item.type == type
+  end, { predicate = true })
 end
 
 return Project

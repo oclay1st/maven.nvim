@@ -48,7 +48,7 @@ local defaultOptions = {
   projects_view = {
     custom_commands = {},
     position = 'right',
-    size = 66,
+    size = 65,
   },
   dependencies_view = {
     size = {
@@ -143,6 +143,22 @@ local defaultOptions = {
       },
     },
   },
+  favorite_commands_view = {
+    size = {
+      width = '40%',
+      height = '30%',
+    },
+    input_win = {
+      border = {
+        style = { '╭', '─', '╮', '│', '│', '─', '│', '│' },
+      },
+    },
+    options_win = {
+      border = {
+        style = { '', '', '', '│', '╯', '─', '╰', '│' },
+      },
+    },
+  },
   console = {
     show_command_execution = true,
     show_lifecycle_execution = true,
@@ -176,6 +192,7 @@ local defaultOptions = {
     entry = ' ',
     search = '',
     argument = '',
+    favorite = '',
   },
 }
 

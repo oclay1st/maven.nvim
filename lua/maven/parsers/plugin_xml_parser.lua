@@ -7,17 +7,17 @@ local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
 local PluginParser = {}
 
 ---@return Project.Goal[]
-local function build_goals(_xml)
+local function build_goals(_xml, prefix)
   assert(_xml.plugin.mojos, 'Tag <mojos> not found on plugin file')
   local goals = {}
   local data = _xml.plugin.mojos.mojo
   if vim.islist(data) then
     for _, item in ipairs(data) do
-      local goal = Project.Goal(item.goal)
+      local goal = Project.Goal(item.goal, prefix)
       table.insert(goals, goal)
     end
   else
-    local goal = Project.Goal(data.goal)
+    local goal = Project.Goal(data.goal, prefix)
     table.insert(goals, goal)
   end
   return goals
@@ -36,8 +36,8 @@ function PluginParser.parse(plugin_xml_content)
   local artifact_id = assert(_xml.plugin.artifactId, 'Tag <artifactId> not found on plugin file')
   local version = assert(_xml.plugin.version, 'Tag <version> not found on plugin file')
   local goal_prefix = assert(_xml.plugin.goalPrefix, 'Tag <goalPrefix> not found on plugin file')
-  local goals = build_goals(_xml)
-  return Project.Plugin(group_id, artifact_id, version, goal_prefix, goals)
+  local goals = build_goals(_xml, goal_prefix)
+  return Project.Plugin(group_id, artifact_id, version, goals)
 end
 
 ---Parse the plugin xml file

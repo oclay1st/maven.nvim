@@ -43,13 +43,21 @@
 ```lua
 {
    "oclay1st/maven.nvim",
-   cmd = { "Maven", "MavenInit", "MavenExec" },
+   cmd = { "Maven", "MavenInit", "MavenExec", "MavenFavorites" },
    dependencies = {
       "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
+      -- optional which-key group registration
+      {
+        'folke/which-key.nvim',
+        opts = { spec = { { mode = { 'n', 'v' }, { '<leader>M', group = 'Maven', icon = { icon = '', color = 'red' } } } } },
+      },
    },
    opts = {}, -- options, see default configuration
-   keys = { { "<Leader>M", "<cmd>Maven<cr>", desc = "Maven" } }
+   keys = {
+      { '<leader>Mm', '<cmd>Maven<cr>', desc = 'Maven Projects' },
+      { '<leader>Mf', '<cmd>MavenFavorites<cr>', desc = 'Maven Favorite Commands' }
+   }
 }
 ```
 
@@ -178,6 +186,22 @@
       },
     },
   },
+  favorite_commands_view = {
+    size = {
+      width = '40%',
+      height = '30%',
+    },
+    input_win = {
+      border = {
+        style = { '╭', '─', '╮', '│', '│', '─', '│', '│' },
+      },
+    },
+    options_win = {
+      border = {
+        style = { '', '', '', '│', '╯', '─', '╰', '│' },
+      },
+    },
+  },
   icons = {
     plugin = '',
     package = '',
@@ -197,6 +221,7 @@
     entry = ' ',
     search = '',
     argument = '',
+    favorite = '',
   },
 }
 ```

@@ -11,12 +11,12 @@ local MavenConfig = require('maven.config')
 local highlights = require('maven.config.highlights')
 
 local node_type_props = {
-  command = {
+  custom_command = {
     icon = MavenConfig.options.icons.command,
     started_state_msg = ' ..running',
     pending_state_msg = ' ..pending',
   },
-  commands = { icon = MavenConfig.options.icons.tool_folder },
+  custom_commands = { icon = MavenConfig.options.icons.tool_folder },
   lifecycle = {
     icon = MavenConfig.options.icons.tool,
     started_state_msg = ' ..running',
@@ -88,8 +88,8 @@ end
 ---@private Execute the command node
 ---@param node NuiTree.Node
 ---@param project Project
-function ProjectView:_load_command_node(node, project)
-  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, node.cmd_args)
+function ProjectView:_load_custom_command_node(node, project)
+  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, node.extra.cmd_args)
   local show_output = MavenConfig.options.console.show_command_execution
   Console.execute_command(command.cmd, command.args, show_output, function(state)
     vim.schedule(function()
@@ -103,7 +103,7 @@ end
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_lifecycle_node(node, project)
-  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
+  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.extra.cmd_arg })
   local show_output = MavenConfig.options.console.show_lifecycle_execution
   Console.execute_command(command.cmd, command.args, show_output, function(state)
     vim.schedule(function()
@@ -117,7 +117,7 @@ end
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_plugin_goal(node, project)
-  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.cmd_arg })
+  local command = CommandBuilder.build_mvn_cmd(project.pom_xml_path, { node.extra.cmd_arg })
   local show_output = MavenConfig.options.console.show_plugin_goal_execution
   Console.execute_command(command.cmd, command.args, show_output, function(state)
     vim.schedule(function()
@@ -181,10 +181,7 @@ function ProjectView:_load_plugins_nodes(node, project, force, on_success)
             type = 'plugin',
             project_id = project.id,
             is_loaded = false,
-            group_id = plugin.group_id,
-            artifact_id = plugin.artifact_id,
-            version = plugin.version,
-            description = plugin:get_compact_name(),
+            extra = plugin,
           })
           table.insert(plugin_nodes, plugin_node)
         end
@@ -206,33 +203,30 @@ end
 ---@param node NuiTree.Node
 ---@param project Project
 function ProjectView:_load_plugin_nodes(node, project)
-  Sources.load_project_plugin_details(
-    node.group_id,
-    node.artifact_id,
-    node.version,
-    function(state, plugin)
-      vim.schedule(function()
-        if state == Utils.SUCCEED_STATE then
-          project:replace_plugin(plugin)
-          local goal_nodes = {}
-          for _, goal in ipairs(plugin.goals) do
-            local goal_node = NuiTree.Node({
-              text = plugin.goal_prefix .. ':' .. goal.name,
-              type = 'plugin_goal',
-              cmd_arg = plugin.goal_prefix .. ':' .. goal.name,
-              project_id = project.id,
-            })
-            table.insert(goal_nodes, goal_node)
-          end
-          node.is_loaded = true
-          self._tree:set_nodes(goal_nodes, node._id)
-          node:expand()
+  local plugin = node.extra ---@type Project.Plugin
+  Sources.load_project_plugin_details(plugin, function(state, _plugin)
+    vim.schedule(function()
+      if state == Utils.SUCCEED_STATE then
+        project:replace_plugin(_plugin)
+        local goal_nodes = {}
+        for _, goal in ipairs(_plugin.goals) do
+          local goal_node = NuiTree.Node({
+            text = goal.full_name,
+            type = 'plugin_goal',
+            project_id = project.id,
+            is_favorite = project:has_favorite_command(goal.full_name, 'goal'),
+            extra = goal,
+          })
+          table.insert(goal_nodes, goal_node)
         end
-        node.state = state
-        self._tree:render()
-      end)
-    end
-  )
+        node.is_loaded = true
+        self._tree:set_nodes(goal_nodes, node._id)
+        node:expand()
+      end
+      node.state = state
+      self._tree:render()
+    end)
+  end)
 end
 
 ---@private Create a project node
@@ -245,32 +239,32 @@ function ProjectView:_create_project_node(project)
     lifecycle_nodes[index] = NuiTree.Node({
       text = lifecycle.name,
       type = 'lifecycle',
-      description = lifecycle.description,
-      cmd_arg = lifecycle.cmd_arg,
       started_state_message = 'running',
       project_id = project.id,
+      is_favorite = project:has_favorite_command(lifecycle.name, 'lifecycle'),
+      extra = lifecycle,
     })
   end
 
-  ---Map command nodes
-  local command_nodes = {}
-  for index, command in ipairs(project.commands) do
-    command_nodes[index] = NuiTree.Node({
+  ---Map the custom command nodes
+  local custom_command_nodes = {}
+  for index, command in ipairs(project.custom_commands) do
+    custom_command_nodes[index] = NuiTree.Node({
       text = command.name,
-      type = 'command',
-      description = command.description,
-      cmd_args = command.cmd_args,
+      type = 'custom_command',
       started_state_message = 'running',
       project_id = project.id,
+      is_favorite = project:has_favorite_command(command.name, 'custom_command'),
+      extra = command,
     })
   end
 
-  ---Map Commands node
-  local commands_node = NuiTree.Node({
+  ---Map the Commands node
+  local custom_commands_node = NuiTree.Node({
     text = 'Commands',
-    type = 'commands',
+    type = 'custom_commands',
     project_id = project.id,
-  }, command_nodes)
+  }, custom_command_nodes)
 
   ---Map Lifecycles node
   local lifecycles_node = NuiTree.Node({
@@ -285,7 +279,6 @@ function ProjectView:_create_project_node(project)
     text = 'Dependencies',
     type = 'dependencies',
     is_loaded = false,
-    cmd_args = { '' },
     started_state_message = 'loading',
     project_id = project.id,
   })
@@ -318,8 +311,8 @@ function ProjectView:_create_project_node(project)
     table.insert(project_nodes, modules_node)
   end
 
-  if #command_nodes > 0 then
-    table.insert(project_nodes, 1, commands_node)
+  if #custom_command_nodes > 0 then
+    table.insert(project_nodes, 1, custom_commands_node)
   end
 
   return NuiTree.Node({
@@ -345,7 +338,8 @@ function ProjectView:_render_projects_tree()
       else
         line:append('  ')
       end
-      line:append(props.icon .. ' ', highlights.SPECIAL)
+      local icon = node.is_favorite and MavenConfig.options.icons.favorite or props.icon
+      line:append(icon .. ' ', highlights.SPECIAL)
       if node.type == 'dependency' and node.is_duplicate and not node:has_children() then
         line:append(node.text, highlights.COMMENT)
       else
@@ -356,8 +350,8 @@ function ProjectView:_render_projects_tree()
       elseif node.state == Utils.PENDING_STATE then
         line:append(props.pending_state_msg, highlights.WARN)
       end
-      if node.description then
-        line:append(' (' .. node.description .. ')', highlights.COMMENT)
+      if node.extra and node.extra.description then
+        line:append(' (' .. node.extra.description .. ')', highlights.COMMENT)
       end
       return line
     end,
@@ -382,34 +376,20 @@ end
 function ProjectView:_render_menu_header_line()
   local line = NuiLine()
   local separator = ' '
-  line:append(
-    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.new,
-    highlights.SPECIAL
-  )
+  line:append(MavenConfig.options.icons.entry, highlights.SPECIAL)
+  line:append(MavenConfig.options.icons.new, highlights.SPECIAL)
   line:append(' Create')
   line:append('<c>' .. separator, highlights.COMMENT)
-  line:append(
-    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.tree,
-    highlights.SPECIAL
-  )
+  line:append(MavenConfig.options.icons.tree, highlights.SPECIAL)
   line:append(' Analyze')
   line:append('<a>' .. separator, highlights.COMMENT)
-  line:append(
-    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.command,
-    highlights.SPECIAL
-  )
+  line:append(MavenConfig.options.icons.command, highlights.SPECIAL)
   line:append(' Execute')
   line:append('<e>' .. separator, highlights.COMMENT)
-  line:append(
-    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.argument,
-    highlights.SPECIAL
-  )
-  line:append(' Args')
-  line:append('<g>' .. separator, highlights.COMMENT)
-  line:append(
-    MavenConfig.options.icons.entry .. '' .. MavenConfig.options.icons.help,
-    highlights.SPECIAL
-  )
+  line:append(MavenConfig.options.icons.favorite, highlights.SPECIAL)
+  line:append(' Favorites')
+  line:append('<f>' .. separator, highlights.COMMENT)
+  line:append(MavenConfig.options.icons.help, highlights.SPECIAL)
   line:append(' Help')
   line:append('<?>' .. separator, highlights.COMMENT)
   self._menu_header_line = line
@@ -488,6 +468,36 @@ function ProjectView:_setup_win_maps()
     end
   end, { noremap = true, nowait = true })
 
+  self._win:map('n', 'f', function()
+    local _projects = self.projects
+    local node = self._tree:get_node()
+    if node ~= nil then
+      local project = self:_lookup_project(node.project_id)
+      _projects = { project }
+    end
+    require('maven').show_favorite_commands(_projects)
+  end, { noremap = true })
+
+  self._win:map('n', 'F', function()
+    local node = self._tree:get_node()
+    if node == nil then
+      return
+    end
+    local project = self:_lookup_project(node.project_id)
+    if node.type == 'custom_command' or node.type == 'lifecycle' or node.type == 'plugin_goal' then
+      if not node.is_favorite then
+        node.is_favorite = true
+        Sources.add_favorite_command(node.extra:as_favorite(), project)
+        vim.notify(node.text .. ' was added to favorites successfully')
+      else
+        node.is_favorite = false
+        Sources.remove_favorite_command(node.extra:as_favorite(), project)
+        vim.notify(node.text .. ' removed from favorites successfully')
+      end
+      self._tree:render()
+    end
+  end, { noremap = true })
+
   self._win:map('n', { '<c-r>' }, function()
     local node = self._tree:get_node()
     if node == nil then
@@ -502,9 +512,9 @@ function ProjectView:_setup_win_maps()
       end)
     end
     if node.type == 'plugins' or node.type == 'plugin' then
-      local pluins_node = self._tree:get_node('-' .. project.id .. '-plugins')
-      assert(pluins_node, "Plugins node doesn't exist on project: " .. project.root_path)
-      self:_load_plugins_nodes(pluins_node, project, true, function()
+      local plugins_node = self._tree:get_node('-' .. project.id .. '-plugins')
+      assert(plugins_node, "Plugins node doesn't exist on project: " .. project.root_path)
+      self:_load_plugins_nodes(plugins_node, project, true, function()
         vim.notify('Plugins reloaded successfully')
       end)
     end
@@ -521,8 +531,8 @@ function ProjectView:_setup_win_maps()
     end
     local updated = false
     local project = self:_lookup_project(node.project_id)
-    if node.type == 'command' then
-      self:_load_command_node(node, project)
+    if node.type == 'custom_command' then
+      self:_load_custom_command_node(node, project)
     elseif node.type == 'lifecycle' then
       self:_load_lifecycle_node(node, project)
     elseif node.type == 'dependencies' and not node.is_loaded then

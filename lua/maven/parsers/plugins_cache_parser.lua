@@ -12,16 +12,15 @@ local M = {}
 --- Parse the plugins cache
 M.parse = function(key)
   local plugins_json = Path:new(Utils.maven_cache_path, 'plugins', key .. '.json')
+  local plugins = {}
   if plugins_json:exists() then
     local data = plugins_json:read()
     local plugins_cache = vim.json.decode(data)
-    local plugins = {}
     for _, item in ipairs(plugins_cache) do
       table.insert(plugins, Project.Plugin(item.group_id, item.artifact_id, item.version))
     end
-    return plugins
   end
-  return {}
+  return plugins
 end
 
 --- Dump the plugins cache to file
