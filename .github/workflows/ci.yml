@@ -1,10 +1,9 @@
 
 name: Ci
-
 on: [push]
-
 jobs:
   lint:
+    name: Check Style
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -14,7 +13,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
           args: --check .
-
   test:
     name: Run Test
     runs-on: ${{ matrix.os }}
@@ -22,23 +20,14 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: rhysd/action-setup-vim@v1
         id: vim
         with:
           neovim: true
           version: nightly
 
-      - name: luajit
-        uses: leafo/gh-actions-lua@v10
-        with:
-          luaVersion: "luajit-openresty"
-
-      - name: luarocks
-        uses: leafo/gh-actions-luarocks@v4
-
       - name: run tests
         shell: bash
         run: |
-          luarocks install luacheck
           ./scripts/test.sh
