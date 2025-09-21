@@ -325,7 +325,7 @@ Favorite.__index = Favorite
 ---@return  Project.Favorite
 function Project.Favorite(name, type, description, cmd_args) --- it could grow
   local self = {}
-  setmetatable(self, Goal)
+  setmetatable(self, Favorite)
   self.name = assert(name, 'Favorite command name required')
   self.type = assert(type, 'Favorite command type required')
   self.description = description
