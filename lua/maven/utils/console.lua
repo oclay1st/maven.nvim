@@ -35,6 +35,9 @@ end
 ---Append a new line to the console
 ---@param line string
 local append_line = function(line)
+  if line == nil then
+    return --nothing to do
+  end
   local last_line = vim.api.nvim_buf_line_count(_buf)
   vim.fn.appendbufline(_buf, last_line - 1, line)
   highlight_buf_line(_buf, line, last_line - 1)
@@ -107,14 +110,14 @@ function M.execute_command(command, args, show_output, callback, cwd)
     on_stdout = function(_, data)
       if show_output then
         vim.schedule(function()
-          append_line(data or '')
+          append_line(data)
         end)
       end
     end,
     on_stderr = function(_, data)
       if show_output then
         vim.schedule(function()
-          append_line(data or '')
+          append_line(data)
         end)
       end
     end,
