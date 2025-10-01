@@ -241,7 +241,7 @@ end
 function DependenciesView:_toggle_filter()
   if self._is_filter_visible then
     self._dependency_filter:hide()
-    if self._filter_value == '' then
+    if not self._filter_value or self._filter_value == '' then
       self._dependencies_win.border:set_text('bottom')
     else
       self._dependencies_win.border:set_text(
@@ -253,7 +253,6 @@ function DependenciesView:_toggle_filter()
     vim.cmd('stopinsert')
   else
     self._dependency_filter:show()
-    vim.cmd('startinsert!')
   end
   self._is_filter_visible = not self._is_filter_visible
 end
@@ -494,6 +493,9 @@ function DependenciesView:_create_layout()
           if w.bufnr == current_buf then
             return
           end
+        end
+        if self._dependency_filter and self._dependency_filter.bufnr == current_buf then
+          return
         end
         self._dependency_filter:unmount()
         self._layout:unmount()
