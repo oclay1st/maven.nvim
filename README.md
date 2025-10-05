@@ -9,16 +9,16 @@
 
 <table>
   <tr>
-    <td> <img src="assets/console.png"  align="center" alt="1" width = 418x></td>
-    <td><img src="assets/dependencies.png" align="center" alt="2" width = 418px></td>
+    <td><span>Console</span><img src="assets/console.png"  align="center" alt="1" width = 418x></td>
+    <td><span>Dependencies</span><img src="assets/dependencies.png" align="center" alt="2" width = 418px></td>
    </tr>
    <tr>
-    <td><img src="assets/archetypes.png" align="center" alt="3" width = 418px></td>
-    <td><img src="assets/commands.png" align="center" alt="4" width = 418px></td>
+    <td><span>Project Initializer</span><img src="assets/archetypes.png" align="center" alt="3" width = 418px></td>
+    <td><span>Commands Options</span><img src="assets/commands.png" align="center" alt="4" width = 418px></td>
   </tr>
   <tr>
-    <td><img src="assets/favorites.png" align="center" alt="5" width = 418px></td>
-    <td><img src="assets/arguments.png" align="center" alt="6" width = 418px></td>
+    <td><span>Favorite Commands</span><img src="assets/favorites.png" align="center" alt="5" width = 418px></td>
+    <td><span>Default Arguments</span><img src="assets/arguments.png" align="center" alt="6" width = 418px></td>
   </tr>
 </table>
 
@@ -53,14 +53,10 @@
    dependencies = {
       "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
-      -- optional which-key group registration
-      {
-        'folke/which-key.nvim',
-        opts = { spec = { { mode = { 'n', 'v' }, { '<leader>M', group = 'Maven', icon = { icon = '', color = 'red' } } } } },
-      },
    },
    opts = {}, -- options, see default configuration
    keys = {
+      { '<leader>M', desc = '+Maven' ,  mode = { 'n', 'v' } },
       { '<leader>Mm', '<cmd>Maven<cr>', desc = 'Maven Projects' },
       { '<leader>Mf', '<cmd>MavenFavorites<cr>', desc = 'Maven Favorite Commands' }
    }
