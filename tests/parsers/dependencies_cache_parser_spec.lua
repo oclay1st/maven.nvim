@@ -20,7 +20,17 @@ T['dump and parse roundtrip'] = function()
 
   local dependencies = {
     Project.Dependency('id-1', nil, 'com.example', 'lib-a', '1.0.0', 'compile', false, nil, 1024),
-    Project.Dependency('id-2', 'id-1', 'com.example', 'lib-b', '2.0.0', 'test', true, '1.0.0', 2048),
+    Project.Dependency(
+      'id-2',
+      'id-1',
+      'com.example',
+      'lib-b',
+      '2.0.0',
+      'test',
+      true,
+      '1.0.0',
+      2048
+    ),
     Project.Dependency('id-3', nil, 'org.other', 'lib-c', '3.0.0', nil, false, nil),
   }
 

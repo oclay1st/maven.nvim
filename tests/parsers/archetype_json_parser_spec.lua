@@ -9,7 +9,12 @@ local T = MiniTest.new_set()
 T['parse_file returns archetypes from json file'] = function()
   local tmpfile = vim.fn.tempname()
   local json_data = vim.fn.json_encode({
-    { artifact_id = 'arch-one', group_id = 'com.example', versions = { '1.0.0', '1.0.1' }, description = 'First' },
+    {
+      artifact_id = 'arch-one',
+      group_id = 'com.example',
+      versions = { '1.0.0', '1.0.1' },
+      description = 'First',
+    },
     { artifact_id = 'arch-two', group_id = 'org.other', versions = { '2.0.0' }, description = nil },
   })
   FileUtils.write(tmpfile, json_data)

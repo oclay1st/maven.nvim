@@ -78,7 +78,9 @@ end
 
 T['parse errors on missing groupId'] = function()
   MiniTest.expect.error(function()
-    EffectivePomParser.parse('<project><artifactId>a</artifactId><version>1</version><build><plugins><plugin><artifactId>p</artifactId><version>1</version></plugin></plugins></build></project>')
+    EffectivePomParser.parse(
+      '<project><artifactId>a</artifactId><version>1</version><build><plugins><plugin><artifactId>p</artifactId><version>1</version></plugin></plugins></build></project>'
+    )
   end)
 end
 

@@ -77,14 +77,20 @@ T['respects max number of versions'] = function()
     '<archetype-catalog><archetypes>',
   }
   for i = 1, 15 do
-    table.insert(xml_parts, [[
+    table.insert(
+      xml_parts,
+      [[
     <archetype>
       <groupId>com.example</groupId>
       <artifactId>many-versions</artifactId>
-      <version>1.0.]])
+      <version>1.0.]]
+    )
     table.insert(xml_parts, tostring(i))
-    table.insert(xml_parts, [[</version>
-    </archetype>]])
+    table.insert(
+      xml_parts,
+      [[</version>
+    </archetype>]]
+    )
   end
   table.insert(xml_parts, '</archetypes></archetype-catalog>')
 
