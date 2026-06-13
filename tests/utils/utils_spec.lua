@@ -1,10 +1,14 @@
+local MiniTest = require('mini.test')
 local Utils = require('maven.utils')
+local eq = MiniTest.expect.equality
 
-describe('should be util', function()
-  it('should have states', function()
-    assert.same(Utils.STARTED_STATE, 'STARTED')
-    assert.same(Utils.FAILED_STATE, 'FAILED')
-    assert.same(Utils.SUCCEED_STATE, 'SUCCEED')
-    assert.same(Utils.PENDING_STATE, 'PENDING')
-  end)
-end)
+local T = MiniTest.new_set()
+
+T['should have states'] = function()
+  eq(Utils.STARTED_STATE, 'STARTED')
+  eq(Utils.FAILED_STATE, 'FAILED')
+  eq(Utils.SUCCEED_STATE, 'SUCCEED')
+  eq(Utils.PENDING_STATE, 'PENDING')
+end
+
+return T
