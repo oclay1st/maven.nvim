@@ -1,8 +1,5 @@
-local scan = require('plenary.scandir')
-local curl = require('plenary.curl')
 local Project = require('maven.sources.project')
 local MavenConfig = require('maven.config')
-local Path = require('plenary.path')
 local PomParser = require('maven.parsers.pom_xml_parser')
 local EffectivePomParser = require('maven.parsers.epom_xml_parser')
 local DependencyTreeParser = require('maven.parsers.dependency_tree_parser')
@@ -18,6 +15,7 @@ local FavoritesCacheParser = require('maven.parsers.favorites_cache_parser')
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Utils = require('maven.utils')
 local console = require('maven.utils.console')
+local FileUtils = require('maven.utils.fs')
 
 local uv = vim.loop
 
@@ -69,9 +67,11 @@ M.create_project_from_pom = function(pom_xml_path)
     Project.new(project_path, pom_xml_path, pom.group_id, pom.artifact_id, pom.version, pom.name)
   project:set_commands(custom_commands)
   for _, module_path in ipairs(pom.module_paths) do
-    local module_pom = Path:new(project_path, module_path, 'pom.xml') ---@type Path
-    local module_pom_path = module_pom:absolute()
-    if module_pom:exists() and not vim.tbl_contains(scanned_pom_list, module_pom_path) then
+    local module_pom_path = vim.fs.joinpath(project_path, module_path, 'pom.xml')
+    if
+      FileUtils.is_file(module_pom_path)
+      and not vim.tbl_contains(scanned_pom_list, module_pom_path)
+    then
       local module_project = M.create_project_from_pom(module_pom_path)
       project:add_module(module_project)
       table.insert(scanned_pom_list, module_pom_path)
@@ -86,7 +86,7 @@ M.scan_projects = function(base_path, callback)
   scanned_pom_list = {}
   custom_commands = create_custom_commands()
   local projects = {}
-  scan.scan_dir_async(base_path, {
+  FileUtils.scan_dir_async(base_path, {
     search_pattern = pom_xml_file_pattern,
     depth = MavenConfig.options.project_scanner_depth,
     on_insert = function(pom_xml_path, _)
@@ -127,13 +127,13 @@ M.load_project_dependencies = function(pom_xml_path, force, callback)
     vim.schedule(function()
       local dependencies
       if state == Utils.SUCCEED_STATE then
-        local dependency_tree_path = Path:new(output_dir, output_filename)
-        dependencies = DependencyTreeParser.parse_file(dependency_tree_path:absolute())
+        local dependency_tree_path = vim.fs.joinpath(output_dir, output_filename)
+        dependencies = DependencyTreeParser.parse_file(dependency_tree_path)
         for _, dependency in ipairs(dependencies) do
           M.set_dependency_size(dependency)
         end
         M.create_dependencies_cache(pom_xml_path, dependencies)
-        dependency_tree_path:rm()
+        FileUtils.delete(dependency_tree_path)
       elseif state == Utils.FAILED_STATE then
         local error_msg = 'Error loading dependencies. '
         if not show_output then
@@ -195,15 +195,14 @@ M.load_project_plugins = function(pom_xml_path, force, callback)
   end
   local output_dir = Utils.maven_data_path
   local output_filename = Utils.uuid() .. '.epom'
-  local file_path = Path:new(output_dir, output_filename)
-  local absolute_file_path = file_path:absolute()
+  local file_path = vim.fs.joinpath(output_dir, output_filename)
   local show_output = MavenConfig.options.console.show_plugins_load_execution
   local _callback = function(state)
     vim.schedule(function()
       local plugins
       if state == Utils.SUCCEED_STATE then
-        local epom = EffectivePomParser.parse_file(absolute_file_path)
-        file_path:rm()
+        local epom = EffectivePomParser.parse_file(file_path)
+        FileUtils.delete(file_path)
         -- map to a plugin list
         plugins = vim.tbl_map(function(item)
           return Project.Plugin(item.group_id, item.artifact_id, item.version)
@@ -223,7 +222,7 @@ M.load_project_plugins = function(pom_xml_path, force, callback)
       callback(state, plugins)
     end)
   end
-  local command = CommandBuilder.build_mvn_effective_pom_cmd(pom_xml_path, absolute_file_path)
+  local command = CommandBuilder.build_mvn_effective_pom_cmd(pom_xml_path, file_path)
   console.execute_command(command.cmd, command.args, show_output, _callback)
 end
 
@@ -252,11 +251,12 @@ M.create_plugins_cache = function(pom_xml_path, plugins)
 end
 
 M.load_project_plugin_details = function(plugin, callback)
-  local _callback = function(state, job)
+  local _callback = function(result)
+    local state = result.code == 0 and Utils.SUCCEED_STATE or Utils.FAILED_STATE
     vim.schedule(function()
       local _plugin
       if state == Utils.SUCCEED_STATE then
-        local xml_content = table.concat(job:result(), ' ')
+        local xml_content = result.stdout
         _plugin = PluginXmlParser.parse(xml_content)
       elseif state == Utils.FAILED_STATE then
         vim.notify('Error loading plugin details.', vim.log.levels.ERROR)
@@ -267,28 +267,30 @@ M.load_project_plugin_details = function(plugin, callback)
 
   local jar_file_path = Utils.get_jar_file_path(plugin.group_id, plugin.artifact_id, plugin.version)
   local command = CommandBuilder.build_read_zip_file_cmd(jar_file_path, Utils.maven_plugin_xml_path)
-  console.execute_command(command.cmd, command.args, false, _callback)
+  vim.system(vim.list_extend({ command.cmd }, command.args), { text = true }, _callback)
 end
 
 M.load_help_options = function(force, callback)
   if not force and M.load_help_options_cache(callback) then
     return
   end
-  local _callback = function(state, job)
+  ---@type fun(result: vim.SystemCompleted)
+  local _callback = function(result)
+    local state = result.code == 0 and Utils.SUCCEED_STATE or Utils.FAILED_STATE
     vim.schedule(function()
       local help_options
       if state == Utils.SUCCEED_STATE then
-        local output_lines = job:result()
+        local output_lines = vim.split(result.stdout, '\n')
         help_options = HelpOptionsParser.parse(output_lines)
         M.create_help_options_cache(help_options)
-      elseif state == Utils.FAILED_STATE then
+      else
         vim.notify('Error loading help options.', vim.log.levels.ERROR)
       end
       callback(state, help_options)
     end)
   end
   local command = CommandBuilder.build_mvn_help_cmd()
-  console.execute_command(command.cmd, command.args, false, _callback)
+  vim.system(vim.list_extend({ command.cmd }, command.args), { text = true }, _callback)
 end
 
 M.load_help_options_cache = function(callback)
@@ -311,43 +313,58 @@ M.create_help_options_cache = function(options)
 end
 
 M.load_archetype_catalog = function(callback)
-  if Utils.archetypes_json_path:exists() then
-    local archetypes = ArchetypeJsonParser:parse_file(Utils.archetypes_json_path:absolute())
+  if FileUtils.is_file(Utils.archetypes_json_path) then
+    local archetypes = ArchetypeJsonParser:parse_file(Utils.archetypes_json_path)
     callback(archetypes)
-  elseif Utils.local_catalog_path:exists() then
-    local catalog_path = Utils.local_catalog_path:absolute()
-    local archetypes = ArchetypeCatalogParser.parse_file(catalog_path)
+  elseif FileUtils.is_file(Utils.local_catalog_path) then
+    local archetypes = ArchetypeCatalogParser.parse_file(Utils.local_catalog_path)
     callback(archetypes)
-    ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path:absolute())
-  elseif Utils.local_central_catalog_path:exists() then
-    local catalog_path = Utils.local_central_catalog_path:absolute()
-    local archetypes = ArchetypeCatalogParser.parse_file(catalog_path)
+    ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path)
+  elseif FileUtils.is_file(Utils.local_central_catalog_path) then
+    local archetypes = ArchetypeCatalogParser.parse_file(Utils.local_central_catalog_path)
     callback(archetypes)
-    ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path:absolute())
+    ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path)
   else
-    local catalog_path = Utils.local_catalog_path:absolute()
-    curl.get(Utils.archetypes_catalog_url, {
-      output = catalog_path,
-      callback = function()
+    vim.system({
+      'curl',
+      '-s',
+      Utils.archetypes_catalog_url,
+    }, { text = true }, function(result)
+      if result.code == 0 then
+        FileUtils.write(Utils.local_catalog_path, result.stdout)
         vim.schedule(function()
-          local archetypes = ArchetypeCatalogParser.parse_file(catalog_path)
+          local archetypes = ArchetypeCatalogParser.parse_file(Utils.local_catalog_path)
           callback(archetypes)
-          ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path:absolute())
+          ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path)
         end)
-      end,
-      on_error = function(message)
+      else
         vim.schedule(function()
-          vim.notify(message, vim.log.levels.ERROR)
+          vim.notify(result.stderr, vim.log.levels.ERROR)
         end)
-      end,
-    })
+      end
+    end)
+    -- curl.get(Utils.archetypes_catalog_url, {
+    --   output = Utils.local_catalog_path,
+    --   callback = function()
+    --     vim.schedule(function()
+    --       local archetypes = ArchetypeCatalogParser.parse_file(Utils.local_catalog_path)
+    --       callback(archetypes)
+    --       ArchetypeJsonParser:export(archetypes, Utils.archetypes_json_path)
+    --     end)
+    --   end,
+    --   on_error = function(message)
+    --     vim.schedule(function()
+    --       vim.notify(message, vim.log.levels.ERROR)
+    --     end)
+    --   end,
+    -- })
   end
 end
 
 M.load_default_archetype_catalog = function()
-  ---@type  Path
-  local catalog_path = Path:new(Utils.get_plugin_root_dir(), 'sources', 'default_archetypes.json')
-  return ArchetypeJsonParser:parse_file(catalog_path:absolute())
+  local catalog_path =
+    vim.fs.joinpath(Utils.get_plugin_root_dir(), 'sources', 'default_archetypes.json')
+  return ArchetypeJsonParser:parse_file(catalog_path)
 end
 
 ---Add command ton favorites
@@ -390,12 +407,7 @@ M.load_favorite_commands_cache = function(project)
 end
 
 M.setup = function()
-  ---@type Path
-  ---
-  local data_path = Path:new(Utils.maven_data_path)
-  if not data_path:exists() then
-    data_path:mkdir()
-  end
+  FileUtils.mkdir(Utils.maven_data_path)
 end
 
 return M

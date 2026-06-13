@@ -1,5 +1,4 @@
 local random = math.random
-local Path = require('plenary.path')
 local M = {}
 
 M.STARTED_STATE = 'STARTED'
@@ -15,24 +14,20 @@ M.uuid = function()
   end)
 end
 
-M.maven_data_path = Path:new(vim.fn.stdpath('data'), 'maven'):absolute()
-M.maven_cache_path = Path:new(vim.fn.stdpath('cache'), 'maven'):absolute()
+M.maven_data_path = vim.fs.joinpath(vim.fn.stdpath('data'), 'maven')
+M.maven_cache_path = vim.fs.joinpath(vim.fn.stdpath('cache'), 'maven')
 
-M.maven_local_repository_path = Path:new(Path.path.home, '.m2', 'repository'):absolute()
+M.maven_local_repository_path = vim.fs.joinpath(vim.fn.expand('~'), '.m2', 'repository')
 
 M.maven_plugin_xml_path = 'META-INF/maven/plugin.xml'
 
 M.archetypes_catalog_url = 'https://repo.maven.apache.org/maven2/archetype-catalog.xml'
 
----@type Path
-M.archetypes_json_path = Path:new(M.maven_data_path, 'archetypes.json')
+M.archetypes_json_path = vim.fs.joinpath(M.maven_data_path, 'archetypes.json')
+M.local_catalog_path = vim.fs.joinpath(M.maven_local_repository_path, 'archetype-catalog.xml')
 
----@type Path
-M.local_catalog_path = Path:new(M.maven_local_repository_path, 'archetype-catalog.xml')
-
----@type Path
 M.local_central_catalog_path =
-  Path:new(M.maven_local_repository_path, 'archetype-catalog-central.xml')
+  vim.fs.joinpath(M.maven_local_repository_path, 'archetype-catalog-central.xml')
 
 M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
@@ -62,14 +57,27 @@ M.humanize_size = function(size)
   return string.format('%.2f %s', size, units[unit_index])
 end
 
+M.path_separator = (function()
+  if jit then
+    local os = string.lower(jit.os)
+    if os ~= 'windows' then
+      return '/'
+    else
+      return '\\'
+    end
+  else
+    return package.config:sub(1, 1)
+  end
+end)()
+
 M.get_jar_file_path = function(group_id, artifact_id, version)
-  return Path:new(
+  return vim.fs.joinpath(
     M.maven_local_repository_path,
-    group_id:gsub('%.', Path.path.sep),
+    group_id:gsub('%.', M.path_separator),
     artifact_id,
     version,
     artifact_id .. '-' .. version .. '.jar'
-  ):absolute()
+  )
 end
 
 return M

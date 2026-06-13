@@ -1,7 +1,7 @@
-local Path = require('plenary.path')
 local Project = require('maven.sources.project')
 local XmlParser = require('maven.vendor.xml2lua.XmlParser')
 local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
+local FileUtils = require('maven.utils.fs')
 
 ---@class PluginParser
 local PluginParser = {}
@@ -44,7 +44,7 @@ end
 ---@param plugin_xml_path string
 ---@return Project.Plugin
 function PluginParser.parse_file(plugin_xml_path)
-  local _xml_content = Path:new(plugin_xml_path):read()
+  local _xml_content = FileUtils.read(plugin_xml_path)
   return PluginParser.parse(_xml_content)
 end
 

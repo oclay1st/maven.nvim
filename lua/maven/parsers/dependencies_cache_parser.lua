@@ -1,6 +1,6 @@
-local Path = require('plenary.path')
 local Utils = require('maven.utils')
 local Project = require('maven.sources.project')
+local FileUtils = require('maven.utils.fs')
 
 local M = {}
 
@@ -17,10 +17,10 @@ local M = {}
 
 --- Parse the dependencies cache
 M.parse = function(key)
-  local dependencies_json = Path:new(Utils.maven_cache_path, 'dependencies', key .. '.json')
+  local dependencies_json = vim.fs.joinpath(Utils.maven_cache_path, 'dependencies', key .. '.json')
   local dependencies = {}
-  if dependencies_json:exists() then
-    local data = dependencies_json:read()
+  if FileUtils.is_file(dependencies_json) then
+    local data = FileUtils.read(dependencies_json)
     local dependencies_cache = vim.json.decode(data) ---@type DependencyCache[]
     for _, item in ipairs(dependencies_cache) do
       table.insert(
@@ -46,10 +46,8 @@ end
 --- @param  key string
 --- @param dependencies Project.Dependency[]
 M.dump = function(key, dependencies)
-  local dependencies_cache_path = Path:new(Utils.maven_cache_path, 'dependencies')
-  if not dependencies_cache_path:exists() then
-    dependencies_cache_path:mkdir()
-  end
+  local dependencies_cache_path = vim.fs.joinpath(Utils.maven_cache_path, 'dependencies')
+  FileUtils.mkdir(dependencies_cache_path)
   ---@type DependencyCache[]
   local dependencies_cache = {}
   for _, dependency in ipairs(dependencies) do
@@ -66,9 +64,8 @@ M.dump = function(key, dependencies)
     })
   end
   local data = vim.json.encode(dependencies_cache)
-  --- @type Path
-  local cache_json = dependencies_cache_path:joinpath(key .. '.json')
-  cache_json:write(data, 'w')
+  local cache_json = vim.fs.joinpath(dependencies_cache_path, key .. '.json')
+  FileUtils.write(cache_json, data)
 end
 
 return M

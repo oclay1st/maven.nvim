@@ -1,6 +1,6 @@
-local Path = require('plenary.path')
 local XmlParser = require('maven.vendor.xml2lua.XmlParser')
 local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
+local FileUtils = require('maven.utils.fs')
 
 ---@class EffectivePomPlugin
 ---@field group_id string
@@ -58,7 +58,7 @@ end
 
 ---Parse the epom xml file
 function EffectivePomParser.parse_file(epom_xml_path)
-  local _xml_content = Path:new(epom_xml_path):read()
+  local _xml_content = FileUtils.read(epom_xml_path)
   return EffectivePomParser.parse(_xml_content)
 end
 

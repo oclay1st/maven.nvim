@@ -1,8 +1,6 @@
 local Project = require('maven.sources.project')
-local context_manager = require('plenary.context_manager')
 local Utils = require('maven.utils')
-local with = context_manager.with
-local open = context_manager.open
+local FileUtils = require('maven.utils.fs')
 
 ---@class DependencyTreeParser
 local DependencyTreeParser = {}
@@ -64,23 +62,22 @@ end
 ---@return Project.Dependency[]
 function DependencyTreeParser.parse_file(tree_file_path)
   local dependencies = {}
-  with(open(tree_file_path), function(reader)
-    reader:read() --- skip the name of the project
-    local space_indentation = 3 --- all the  node are indent on multiple of 3 spaces
-    local deep_dependency = {}
-    for line in reader:lines() do
-      local clean_line = string.gsub(line, '[%+%\\%|]', ' ')
-      local dependency_id = Utils.uuid()
-      local character_position = assert(string.find(clean_line, '%-')) --- get all characters until -
-      local spaces = character_position - 2 --- the character itself and the first line character
-      local deep_index = spaces / space_indentation
-      deep_dependency[deep_index] = dependency_id
-      local parent_dependency_id = deep_dependency[deep_index - 1]
-      local dependency_text = string.sub(clean_line, character_position + 2)
-      local dependency = parse_dependency(dependency_text, dependency_id, parent_dependency_id)
-      table.insert(dependencies, dependency)
-    end
-  end)
+  local space_indentation = 3 --- all the  node are indent on multiple of 3 spaces
+  local deep_dependency = {}
+  local lines = FileUtils.read_lines(tree_file_path)
+  for i = 2, #lines do --- skip the name of the project
+    local line = lines[i]
+    local clean_line = string.gsub(line, '[%+%\\%|]', ' ')
+    local dependency_id = Utils.uuid()
+    local character_position = assert(string.find(clean_line, '%-')) --- get all characters until -
+    local spaces = character_position - 2 --- the character itself and the first line character
+    local deep_index = spaces / space_indentation
+    deep_dependency[deep_index] = dependency_id
+    local parent_dependency_id = deep_dependency[deep_index - 1]
+    local dependency_text = string.sub(clean_line, character_position + 2)
+    local dependency = parse_dependency(dependency_text, dependency_id, parent_dependency_id)
+    table.insert(dependencies, dependency)
+  end
   return dependencies
 end
 

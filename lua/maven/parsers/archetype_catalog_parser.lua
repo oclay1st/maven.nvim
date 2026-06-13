@@ -1,7 +1,7 @@
-local Path = require('plenary.path')
 local XmlParser = require('maven.vendor.xml2lua.XmlParser')
 local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
 local Archetype = require('maven.sources.archetype')
+local FileUtils = require('maven.utils.fs')
 
 ---@class ArchetypeCatalogParser
 local ArchetypeCatalogParser = {}
@@ -40,7 +40,7 @@ end
 
 ---Parse the catalog xml file
 function ArchetypeCatalogParser.parse_file(catalog_xml_path)
-  local _xml_content = Path:new(catalog_xml_path):read()
+  local _xml_content, _ = FileUtils.read(catalog_xml_path)
   return ArchetypeCatalogParser.parse(_xml_content)
 end
 

@@ -1,7 +1,7 @@
-local Job = require('plenary.job')
 local Utils = require('maven.utils')
 local MavenConfig = require('maven.config')
 local uv = vim.loop
+local Queue = require('maven.utils.queue')
 
 local M = {}
 
@@ -9,6 +9,7 @@ local _buf
 local _win
 local _buf_name = 'maven://MavenConsole'
 local _jobs = {} ---@type Job[]
+local _queue = Queue.new()
 
 local line_patterns = {
   { pattern = '^%[INFO%]', hl = 'DiagnosticInfo', col_start = 1, col_end = 5 },
@@ -67,30 +68,9 @@ local function setup_buffer()
   vim.api.nvim_create_autocmd({ 'BufUnload' }, {
     pattern = _buf_name,
     callback = function()
-      for _, job in ipairs(_jobs) do
-        if job and job.pid then
-          uv.kill(job.pid, 9)
-        end
-      end
+      _queue:cancel_all()
     end,
   })
-end
-
-local function enqueue_job(job, callback)
-  local count = #_jobs
-  table.insert(_jobs, job)
-  if count > 0 then
-    _jobs[count]:and_then(job)
-    if callback then
-      callback(Utils.PENDING_STATE)
-    end
-  else
-    job:start()
-  end
-end
-
-local function dequeue_job()
-  table.remove(_jobs, 1)
 end
 
 ---Execute maven command
@@ -103,41 +83,50 @@ function M.execute_command(command, args, show_output, callback, cwd)
   if show_output then
     setup_buffer()
   end
-  local job = Job:new({
-    command = command,
-    args = args,
-    cwd = cwd,
-    on_stdout = function(_, data)
-      if show_output then
-        vim.schedule(function()
-          append_line(data)
-        end)
-      end
-    end,
-    on_stderr = function(_, data)
-      if show_output then
-        vim.schedule(function()
-          append_line(data)
-        end)
-      end
-    end,
-    on_start = function()
-      if show_output then
-        vim.schedule(function()
-          set_buf_modifiable(true)
-          if MavenConfig.options.console.clean_before_execution then
-            vim.api.nvim_buf_set_lines(_buf, 0, -1, false, {})
+
+  local _std_handler = function(_, data)
+    if show_output and data ~= nil then
+      vim.schedule(function()
+        local lines = vim.split(data, '\n')
+        for _, line in ipairs(lines) do
+          if line ~= '' then
+            append_line(line)
           end
-          local message = '>> Executing: ' .. command .. ' ' .. table.concat(args, ' ')
-          append_line(message)
-          append_line('')
-        end)
-      end
-      if callback then
-        callback(Utils.STARTED_STATE)
-      end
-    end,
-    on_exit = function()
+        end
+      end)
+    end
+  end
+
+  if _queue.active > 0 then
+    if callback then
+      callback(Utils.PENDING_STATE)
+    end
+  end
+
+  _queue
+    :enqueue(vim.list_extend({ command }, args), {
+      cwd = cwd,
+      text = true,
+      on_start = function()
+        if show_output then
+          vim.schedule(function()
+            set_buf_modifiable(true)
+            if MavenConfig.options.console.clean_before_execution then
+              vim.api.nvim_buf_set_lines(_buf, 0, -1, false, {})
+            end
+            local message = '>> Executing: ' .. command .. ' ' .. table.concat(args, ' ')
+            append_line(message)
+            append_line('')
+          end)
+        end
+        if callback then
+          callback(Utils.STARTED_STATE)
+        end
+      end,
+      stdout = _std_handler,
+      stderr = _std_handler,
+    })
+    :next(function()
       if show_output then
         vim.schedule(function()
           if not MavenConfig.options.console.clean_before_execution then
@@ -145,25 +134,16 @@ function M.execute_command(command, args, show_output, callback, cwd)
           end
           set_buf_modifiable(false)
         end)
-        dequeue_job()
       end
-    end,
-  })
-
-  if callback then
-    job:after_success(function(j, code, signal)
-      callback(Utils.SUCCEED_STATE, j, code, signal)
+      if callback then
+        callback(Utils.SUCCEED_STATE)
+      end
     end)
-    job:after_failure(function(j, code, signal)
-      callback(Utils.FAILED_STATE, j, code, signal)
+    :catch(function()
+      if callback then
+        callback(Utils.FAILED_STATE)
+      end
     end)
-  end
-
-  if show_output then
-    enqueue_job(job, callback)
-  else
-    job:start()
-  end
 end
 
 return M

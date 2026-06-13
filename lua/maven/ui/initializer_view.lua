@@ -3,7 +3,6 @@ local Tree = require('nui.tree')
 local Line = require('nui.line')
 local Text = require('nui.text')
 local Popup = require('nui.popup')
-local Path = require('plenary.path')
 local event = require('nui.utils.autocmd').event
 local highlights = require('maven.config.highlights')
 local MavenConfig = require('maven.config')
@@ -11,6 +10,7 @@ local Utils = require('maven.utils')
 local ArchetypeList = require('maven.ui.components.archetype_list')
 local CommandBuilder = require('maven.utils.cmd_builder')
 local Console = require('maven.utils.console')
+local FileUtils = require('maven.utils.fs')
 
 ---@class InitializerView
 ---@field private _project_name_component NuiInput
@@ -102,6 +102,8 @@ end
 
 ---@private Create project package component
 function InitializerView:_create_project_package_component()
+  self._project_package = MavenConfig.options.initializer_view.project_package_win.default_value
+    or ''
   self._project_package_component = Input(
     vim.tbl_deep_extend('force', self._default_opts, {
       border = {
@@ -112,7 +114,7 @@ function InitializerView:_create_project_package_component()
       },
     }),
     {
-      default_value = MavenConfig.options.initializer_view.project_package_win.default_value or '',
+      default_value = self._project_package,
       prompt = Text(' ', highlights.SPECIAL),
       on_change = function(value)
         self._project_package = value
@@ -120,7 +122,7 @@ function InitializerView:_create_project_package_component()
     }
   )
   local function submit()
-    if not string.match(self._project_package, '(%w+)%.(%w+)') then
+    if not self._project_package or not string.match(self._project_package, '(%w+)%.(%w+)') then
       vim.notify('Bad package name format', vim.log.levels.ERROR)
     else
       vim.cmd('stopinsert')
@@ -258,7 +260,7 @@ function InitializerView:_create_directory_component()
   options_tree:render()
   self._directory_component:on(event.BufWinEnter, function()
     for _, node in ipairs(options_tree:get_nodes()) do
-      node.project_path = node.path .. Path.path.sep .. self._project_name
+      node.project_path = vim.fs.joinpath(node.path, self._project_name)
     end
     options_tree:render()
   end)
@@ -289,13 +291,12 @@ function InitializerView:_create_directory_component()
 end
 
 function InitializerView:_create_project()
-  ---@type Path
-  local project_directory = Path:new(self._directory, self._project_name)
-  if project_directory:exists() then
+  local project_directory = vim.fs.joinpath(self._directory, self._project_name)
+  if FileUtils.exists(project_directory) then
     vim.notify('Directory already exists', vim.log.levels.ERROR)
     return false
   end
-  project_directory:mkdir()
+  FileUtils.mkdir(project_directory)
   local _callback = function(state)
     vim.schedule(function()
       if state == Utils.SUCCEED_STATE then
@@ -304,7 +305,7 @@ function InitializerView:_create_project()
           '&Yes\n&No'
         )
         if choice == 1 then
-          vim.api.nvim_set_current_dir(project_directory:absolute())
+          vim.api.nvim_set_current_dir(project_directory)
           require('maven').reset_projects_view()
         end
       elseif state == Utils.FAILED_STATE then
@@ -322,13 +323,7 @@ function InitializerView:_create_project()
     self._directory
   )
   local show_output = MavenConfig.options.console.show_project_create_execution
-  Console.execute_command(
-    command.cmd,
-    command.args,
-    show_output,
-    _callback,
-    project_directory:absolute()
-  )
+  Console.execute_command(command.cmd, command.args, show_output, _callback, project_directory)
   return true
 end
 

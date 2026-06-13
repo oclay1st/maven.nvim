@@ -1,6 +1,6 @@
-local Path = require('plenary.path')
 local Utils = require('maven.utils')
 local Project = require('maven.sources.project')
+local FileUtils = require('maven.utils.fs')
 
 local M = {}
 
@@ -11,10 +11,10 @@ local M = {}
 
 --- Parse the plugins cache
 M.parse = function(key)
-  local plugins_json = Path:new(Utils.maven_cache_path, 'plugins', key .. '.json')
+  local plugins_json = vim.fs.joinpath(Utils.maven_cache_path, 'plugins', key .. '.json')
   local plugins = {}
-  if plugins_json:exists() then
-    local data = plugins_json:read()
+  if FileUtils.is_file(plugins_json) then
+    local data = FileUtils.read(plugins_json)
     local plugins_cache = vim.json.decode(data)
     for _, item in ipairs(plugins_cache) do
       table.insert(plugins, Project.Plugin(item.group_id, item.artifact_id, item.version))
@@ -27,10 +27,8 @@ end
 --- @param  key string
 --- @param plugins Project.Plugin[]
 M.dump = function(key, plugins)
-  local plugins_cache_path = Path:new(Utils.maven_cache_path, 'plugins')
-  if not plugins_cache_path:exists() then
-    plugins_cache_path:mkdir()
-  end
+  local plugins_cache_path = vim.fs.joinpath(Utils.maven_cache_path, 'plugins')
+  FileUtils.mkdir(plugins_cache_path)
   ---@type PluginCache[]
   local plugins_cache = {}
   for _, plugin in ipairs(plugins) do
@@ -41,9 +39,8 @@ M.dump = function(key, plugins)
     })
   end
   local data = vim.json.encode(plugins_cache)
-  --- @type Path
-  local cache_json = plugins_cache_path:joinpath(key .. '.json')
-  cache_json:write(data, 'w')
+  local cache_json = vim.fs.joinpath(plugins_cache_path, key .. '.json')
+  FileUtils.write(cache_json, data)
 end
 
 return M

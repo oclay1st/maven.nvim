@@ -1,6 +1,6 @@
-local Path = require('plenary.path')
 local XmlParser = require('maven.vendor.xml2lua.XmlParser')
 local TreeHandler = require('maven.vendor.xml2lua.TreeHandler')
+local FileUtils = require('maven.utils.fs')
 
 ---@class Pom
 ---@field group_id? string
@@ -48,7 +48,7 @@ end
 ---Parse the pom xml file
 ---@return Pom
 function PomParser.parse_file(pom_xml_path)
-  local _xml_content = Path:new(pom_xml_path):read()
+  local _xml_content = FileUtils.read(pom_xml_path)
   return PomParser.parse(_xml_content)
 end
 
