@@ -1,6 +1,5 @@
 local Utils = require('maven.utils')
 local MavenConfig = require('maven.config')
-local uv = vim.loop
 local Queue = require('maven.utils.queue')
 
 local M = {}
@@ -8,7 +7,6 @@ local M = {}
 local _buf
 local _win
 local _buf_name = 'maven://MavenConsole'
-local _jobs = {} ---@type Job[]
 local _queue = Queue.new()
 
 local line_patterns = {
@@ -23,7 +21,10 @@ local line_patterns = {
 local function highlight_buf_line(buf, line, line_number)
   for _, item in ipairs(line_patterns) do
     if string.find(line, item.pattern) then
-      vim.api.nvim_buf_add_highlight(buf, 0, item.hl, line_number, item.col_start, item.col_end)
+      vim.api.nvim_buf_set_extmark(buf, MavenConfig.namespace, line_number, item.col_start, {
+        end_col = item.col_end,
+        hl_group = item.hl,
+      })
     end
   end
 end
@@ -73,6 +74,28 @@ local function setup_buffer()
   })
 end
 
+local function line_reader(on_line)
+  local buffer = ''
+  return function(_, data)
+    if not data then
+      if buffer ~= '' then
+        on_line(buffer)
+      end
+      return
+    end
+    buffer = buffer .. data
+    while true do
+      local nl = buffer:find('\n', 1, true)
+      if not nl then
+        break
+      end
+      local line = buffer:sub(1, nl - 1)
+      buffer = buffer:sub(nl + 1)
+      on_line(line)
+    end
+  end
+end
+
 ---Execute maven command
 ---@param command string
 ---@param args string[]
@@ -83,20 +106,7 @@ function M.execute_command(command, args, show_output, callback, cwd)
   if show_output then
     setup_buffer()
   end
-
-  local _std_handler = function(_, data)
-    if show_output and data ~= nil then
-      vim.schedule(function()
-        local lines = vim.split(data, '\n')
-        for _, line in ipairs(lines) do
-          if line ~= '' then
-            append_line(line)
-          end
-        end
-      end)
-    end
-  end
-
+  local output = {}
   if _queue.active > 0 then
     if callback then
       callback(Utils.PENDING_STATE)
@@ -123,10 +133,24 @@ function M.execute_command(command, args, show_output, callback, cwd)
           callback(Utils.STARTED_STATE)
         end
       end,
-      stdout = _std_handler,
-      stderr = _std_handler,
+      stdout = line_reader(function(line)
+        table.insert(output, line)
+        if show_output then
+          vim.schedule(function()
+            append_line(line)
+          end)
+        end
+      end),
+      stderr = line_reader(function(line)
+        if show_output then
+          vim.schedule(function()
+            append_line(line)
+          end)
+        end
+      end),
     })
-    :next(function()
+    :next(function(result)
+      result.output = output
       if show_output then
         vim.schedule(function()
           if not MavenConfig.options.console.clean_before_execution then
@@ -136,7 +160,7 @@ function M.execute_command(command, args, show_output, callback, cwd)
         end)
       end
       if callback then
-        callback(Utils.SUCCEED_STATE)
+        callback(Utils.SUCCEED_STATE, result)
       end
     end)
     :catch(function()
